@@ -1,0 +1,30 @@
+BasedOnStyle: LLVM
+
+Language: Cpp
+IndentWidth: 4
+ColumnLimit: 100
+AllowShortBlocksOnASingleLine: Empty
+AllowShortFunctionsOnASingleLine: Empty
+AlignConsecutiveAssignments: Consecutive
+AlwaysBreakTemplateDeclarations: Yes
+ReferenceAlignment: Pointer
+
+BreakBeforeBraces: Custom
+BraceWrapping:
+    AfterClass: true
+    AfterStruct: true
+    AfterUnion: true
+    AfterEnum: true
+    AfterCaseLabel: false
+    AfterNamespace: false
+    AfterExternBlock: false
+    SplitEmptyNamespace: false
+    SplitEmptyRecord: false
+    SplitEmptyFunction: false
+    AfterControlStatement: Never
+    AfterFunction: true
+    BeforeWhile: false
+    BeforeLambdaBody: false
+    IndentBraces: false
+    BeforeElse: false
+    BeforeCatch: false
