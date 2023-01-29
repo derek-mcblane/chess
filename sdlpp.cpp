@@ -2,32 +2,29 @@
 
 namespace sdl {
 
-[[nodiscard]] WindowUniquePtr
-make_window(const char *title, int x, int y, int w, int h, Uint32 flags)
+[[nodiscard]] WindowUniquePtr make_window(const char *title, int x_position, int y_position,
+                                          int width, int height, Uint32 flags)
 {
-    WindowUniquePtr window{SDL_CreateWindow(title, x, y, w, h, flags)};
+    WindowUniquePtr window{SDL_CreateWindow(title, x_position, y_position, width, height, flags)};
     if (window == nullptr) {
         throw sdl::exception::create_window{};
     }
     return window;
 }
 
-[[nodiscard]] RendererUniquePtr make_renderer(SDL_Window *window,
-                                                                           int index, Uint32 flags)
+[[nodiscard]] RendererUniquePtr make_renderer(SDL_Window *window, int index, Uint32 flags)
 {
-    RendererUniquePtr renderer{
-        SDL_CreateRenderer(window, index, flags)};
+    RendererUniquePtr renderer{SDL_CreateRenderer(window, index, flags)};
     if (renderer == nullptr) {
         throw sdl::exception::create_renderer{};
     }
     return renderer;
 }
 
-[[nodiscard]] TextureUniquePtr
-make_texture_from_surface(SDL_Renderer *renderer, SDL_Surface *surface)
+[[nodiscard]] TextureUniquePtr make_texture_from_surface(SDL_Renderer *renderer,
+                                                         SDL_Surface *surface)
 {
-    TextureUniquePtr texture{
-        SDL_CreateTextureFromSurface(renderer, surface)};
+    TextureUniquePtr texture{SDL_CreateTextureFromSurface(renderer, surface)};
     if (texture == nullptr) {
         throw sdl::exception::texture_from_surface{};
     }
@@ -43,12 +40,10 @@ make_texture_from_surface(SDL_Renderer *renderer, SDL_Surface *surface)
     return image;
 }
 
-[[nodiscard]] SurfaceUniquePtr
-convert_surface(SurfaceUniquePtr surface, const SDL_PixelFormat *format,
-                Uint32 flags)
+[[nodiscard]] SurfaceUniquePtr convert_surface(SurfaceUniquePtr surface,
+                                               const SDL_PixelFormat *format, Uint32 flags)
 {
-    SurfaceUniquePtr converted_surface{
-        SDL_ConvertSurface(surface.get(), format, flags)};
+    SurfaceUniquePtr converted_surface{SDL_ConvertSurface(surface.get(), format, flags)};
     if (converted_surface == nullptr) {
         throw sdl::exception::convert_surface{};
     }

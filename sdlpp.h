@@ -49,20 +49,7 @@ struct select_rect<float>
 };
 
 template <typename T>
-class Rectangle : public select_rect<T>::type
-{
-    using RectangleType = typename select_rect<T>::type;
-
-  public:
-    Rectangle(Point<T> position, Point<T> size)
-        : SDL_Rect{.x = position.x, .y = position.y, .w = size.x, .h = size.y}
-    {}
-
-    [[nodiscard]] const RectangleType *get() const
-    {
-        return static_cast<const RectangleType *>(this);
-    }
-};
+using Rectangle = typename select_rect<T>::type;
 
 namespace exception {
 
@@ -79,7 +66,7 @@ class generic_error : virtual public std::runtime_error
 
     ~generic_error() noexcept override = default;
 
-    [[nodiscard]] const char *error() const noexcept
+    [[nodiscard]] static const char *error() noexcept
     {
         return SDL_GetError();
     }
@@ -157,7 +144,7 @@ class Application
     {
         namespace chrono = std::chrono;
         SDL_Event event;
-        while (SDL_PollEvent(&event)) {
+        while (SDL_PollEvent(&event) != 0) {
             switch (event.type) {
             case SDL_QUIT:
                 on_sdl_quit_event();
@@ -166,9 +153,9 @@ class Application
                 break;
             }
         }
-        auto event_process_time_ = chrono::steady_clock::now();
+        auto event_process_time = chrono::steady_clock::now();
         std::this_thread::sleep_until(last_event_process_time_ + chrono::milliseconds(25));
-        last_event_process_time_ = event_process_time_;
+        last_event_process_time_ = event_process_time;
     }
 
   private:
@@ -219,8 +206,8 @@ using RendererUniquePtr = std::unique_ptr<SDL_Renderer, RendererDeleter>;
 using TextureUniquePtr  = std::unique_ptr<SDL_Texture, TextureDeleter>;
 using SurfaceUniquePtr  = std::unique_ptr<SDL_Surface, SurfaceDeleter>;
 
-[[nodiscard]] WindowUniquePtr make_window(const char *title, int x, int y, int w, int h,
-                                          Uint32 flags);
+[[nodiscard]] WindowUniquePtr make_window(const char *title, int x_position, int y_position,
+                                          int width, int height, Uint32 flags);
 
 [[nodiscard]] RendererUniquePtr make_renderer(SDL_Window *window, int index, Uint32 flags);
 
