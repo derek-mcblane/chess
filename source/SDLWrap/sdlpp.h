@@ -8,6 +8,7 @@
 #include <functional>
 #include <memory>
 #include <optional>
+#include <span>
 #include <stdexcept>
 #include <string>
 #include <thread>
@@ -51,6 +52,8 @@ struct select_rect<float>
 template <typename T>
 using Rectangle = typename select_rect<T>::type;
 
+using Color = SDL_Color;
+
 namespace exception {
 
 class generic_error : virtual public std::runtime_error
@@ -59,10 +62,10 @@ class generic_error : virtual public std::runtime_error
     [[nodiscard]] generic_error() : std::runtime_error(SDL_GetError()) {}
 
     [[nodiscard]] generic_error(const generic_error &other) noexcept = default;
-    generic_error &operator=(const generic_error &other) noexcept    = default;
+    generic_error &operator=(const generic_error &other) noexcept = default;
 
     [[nodiscard]] generic_error(generic_error &&other) noexcept = default;
-    generic_error &operator=(generic_error &&other) noexcept    = default;
+    generic_error &operator=(generic_error &&other) noexcept = default;
 
     ~generic_error() noexcept override = default;
 
@@ -120,15 +123,15 @@ class Application
         if (SDL_Init(flags_) < 0) {
             throw exception::init{};
         }
-        running_                 = true;
+        running_ = true;
         last_event_process_time_ = chrono::steady_clock::now();
     }
 
     [[nodiscard]] Application(const Application &other) = delete;
-    Application operator=(const Application &other)     = delete;
+    Application operator=(const Application &other) = delete;
 
     [[nodiscard]] Application(Application &&other) noexcept = delete;
-    Application operator=(Application &&other) noexcept     = delete;
+    Application operator=(Application &&other) noexcept = delete;
 
     ~Application() noexcept
     {
@@ -201,10 +204,10 @@ struct SurfaceDeleter
     }
 };
 
-using WindowUniquePtr   = std::unique_ptr<SDL_Window, WindowDeleter>;
+using WindowUniquePtr = std::unique_ptr<SDL_Window, WindowDeleter>;
 using RendererUniquePtr = std::unique_ptr<SDL_Renderer, RendererDeleter>;
-using TextureUniquePtr  = std::unique_ptr<SDL_Texture, TextureDeleter>;
-using SurfaceUniquePtr  = std::unique_ptr<SDL_Surface, SurfaceDeleter>;
+using TextureUniquePtr = std::unique_ptr<SDL_Texture, TextureDeleter>;
+using SurfaceUniquePtr = std::unique_ptr<SDL_Surface, SurfaceDeleter>;
 
 [[nodiscard]] WindowUniquePtr make_window(const char *title, int x_position, int y_position,
                                           int width, int height, Uint32 flags);
@@ -218,5 +221,45 @@ using SurfaceUniquePtr  = std::unique_ptr<SDL_Surface, SurfaceDeleter>;
 
 [[nodiscard]] SurfaceUniquePtr convert_surface(SurfaceUniquePtr surface,
                                                const SDL_PixelFormat *format, Uint32 flags = 0);
+
+class Renderer
+{
+  public:
+    Renderer(RendererUniquePtr renderer) : renderer_(std::move(renderer)) {}
+
+    void set_draw_color(const Color &color)
+    {
+        if (SDL_SetRenderDrawColor(renderer_.get(), color.r, color.g, color.b, color.a) != 0) {
+            throw exception::generic_error{};
+        }
+    }
+
+    void clear()
+    {
+        if (SDL_RenderClear(renderer_.get()) != 0) {
+            throw exception::generic_error{};
+        }
+    }
+
+    void present()
+    {
+        SDL_RenderPresent(renderer_.get());
+    }
+
+    template <class T>
+    void fill_rectangle(const Rectangle<T> &rectangle);
+
+    template <class T>
+    void fill_rectangles(std::span<Rectangle<T>> rectangles);
+
+    template <typename DestinationT>
+    void copy(SDL_Texture &texture, const Rectangle<int> &source,
+              const Rectangle<DestinationT> &destination);
+
+    TextureUniquePtr make_texture_from_surface(SDL_Surface *surface);
+
+  private:
+    RendererUniquePtr renderer_;
+};
 
 } // namespace sdl

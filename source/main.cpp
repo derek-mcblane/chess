@@ -1,6 +1,7 @@
 #include "sdlpp.h"
 #include "sdlpp_image.h"
 
+#include <SDL_render.h>
 #include <gsl/gsl>
 
 #include <exception>
@@ -9,22 +10,12 @@
 #include <string>
 #include <thread>
 
-namespace sdl {
-struct Color
-{
-    Uint8 r;
-    Uint8 g;
-    Uint8 b;
-    Uint8 a;
-};
-
-namespace pallete {
+namespace sdl::pallete {
 
 constexpr Color black{0x00, 0x00, 0x00, 0xFF};
 constexpr Color white{0xFF, 0xFF, 0xFF, 0xFF};
 
-} // namespace pallete
-} // namespace sdl
+} // namespace sdl::pallete
 
 class SpriteMapGrid
 {
@@ -41,8 +32,9 @@ class SpriteMapGrid
 
 sdl::Rectangle<int> SpriteMapGrid::get_region(sdl::Point<int> coordinate) const
 {
-    return {
+    auto region = sdl::Rectangle<int>{
         .x = coordinate.x * pitch_.x, .y = coordinate.y * pitch_.y, .w = pitch_.x, .h = pitch_.y};
+    return region;
 }
 
 enum class Colors : int
@@ -77,13 +69,12 @@ int main(int argc, char *argv[])
     auto window = sdl::make_window("SDL Application", SDL_WINDOWPOS_UNDEFINED,
                                    SDL_WINDOWPOS_UNDEFINED, width, height, SDL_WINDOW_SHOWN);
 
-    auto renderer = sdl::make_renderer(window.get(), -1, SDL_RENDERER_ACCELERATED);
+    auto renderer = sdl::Renderer{sdl::make_renderer(window.get(), -1, SDL_RENDERER_ACCELERATED)};
 
-    const auto color = sdl::pallete::white;
-    SDL_SetRenderDrawColor(renderer.get(), color.r, color.g, color.b, color.a);
+    renderer.set_draw_color(sdl::pallete::white);
 
-    auto piece_sprites = sdl::make_texture_from_surface(
-        renderer.get(), sdl::image::load_image("resources/pieces_sprite_map.png").get());
+    auto piece_sprites = renderer.make_texture_from_surface(
+        sdl::image::load_image("resources/pieces_sprite_map.png").get());
 
     sdl::Point<int> piece_sprites_size;
     SDL_QueryTexture(piece_sprites.get(), nullptr, nullptr, &piece_sprites_size.x,
@@ -100,11 +91,11 @@ int main(int argc, char *argv[])
         int piece_i = 3;
         int color_i = 1;
         auto pieces_sprites_rect = piece_sprites_grid.get_region({piece_i, color_i});
-        const sdl::Rectangle<int> screen_rect{.x = 0, .y = 0, .w = 200, .h = 200};
+        const auto screen_rect = sdl::Rectangle<int>{.x = 0, .y = 0, .w = 200, .h = 200};
 
-        SDL_RenderClear(renderer.get());
-        SDL_RenderCopy(renderer.get(), piece_sprites.get(), &pieces_sprites_rect, &screen_rect);
-        SDL_RenderPresent(renderer.get());
+        renderer.clear();
+        renderer.copy<int>(*piece_sprites, pieces_sprites_rect, screen_rect);
+        renderer.present();
     }
 
     return 0;
