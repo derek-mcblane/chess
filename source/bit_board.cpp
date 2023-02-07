@@ -48,17 +48,17 @@ bool BitBoard::on_edge<downleft>() const
     return (bits_ & (bottom_edge | left_edge)) != 0U;
 }
 template <>
-BitBoard BitBoard::shift<up>(const size_t &n) const
+BitBoard BitBoard::shift<up>(const size_t& n) const
 {
     return bits_ << (board_size * n);
 }
 template <>
-BitBoard BitBoard::shift<down>(const size_t &n) const
+BitBoard BitBoard::shift<down>(const size_t& n) const
 {
     return bits_ >> (board_size * n);
 }
 template <>
-BitBoard BitBoard::shift<right>(const size_t &n) const
+BitBoard BitBoard::shift<right>(const size_t& n) const
 {
     BitBoard shifted{bits_};
     BitsT wall{0};
@@ -71,7 +71,7 @@ BitBoard BitBoard::shift<right>(const size_t &n) const
     return shifted;
 }
 template <>
-BitBoard BitBoard::shift<left>(const size_t &n) const
+BitBoard BitBoard::shift<left>(const size_t& n) const
 {
     BitBoard shifted{bits_};
     BitsT wall{0};
@@ -84,22 +84,22 @@ BitBoard BitBoard::shift<left>(const size_t &n) const
     return shifted;
 }
 template <>
-BitBoard BitBoard::shift<upright>(const size_t &n) const
+BitBoard BitBoard::shift<upright>(const size_t& n) const
 {
     return shift<up>(n).shift<right>(n);
 }
 template <>
-BitBoard BitBoard::shift<upleft>(const size_t &n) const
+BitBoard BitBoard::shift<upleft>(const size_t& n) const
 {
     return shift<up>(n).shift<left>(n);
 }
 template <>
-BitBoard BitBoard::shift<downleft>(const size_t &n) const
+BitBoard BitBoard::shift<downleft>(const size_t& n) const
 {
     return shift<down>(n).shift<left>(n);
 }
 template <>
-BitBoard BitBoard::shift<downright>(const size_t &n) const
+BitBoard BitBoard::shift<downright>(const size_t& n) const
 {
     return shift<down>(n).shift<right>(n);
 }

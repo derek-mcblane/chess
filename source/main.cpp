@@ -57,7 +57,7 @@ enum class Pieces
 };
 static constexpr size_t n_pieces = static_cast<int>(Pieces::n_pieces_);
 
-int main(int argc, char *argv[])
+int main(int argc, char* argv[])
 {
     sdl::Application application{SDL_INIT_VIDEO};
     sdl::image::Extensions extensions{IMG_INIT_PNG};

@@ -6,6 +6,8 @@ ColumnLimit: 100
 AllowShortBlocksOnASingleLine: Empty
 AllowShortFunctionsOnASingleLine: Empty
 AlwaysBreakTemplateDeclarations: Yes
+DerivePointerAlignment: false
+PointerAlignment: Left
 ReferenceAlignment: Pointer
 
 BreakBeforeBraces: Custom

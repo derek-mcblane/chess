@@ -63,7 +63,7 @@ struct RendererConfig
 
 struct WindowConfig
 {
-    const char *title;
+    const char* title;
     int x_position;
     int y_position;
     int width;
@@ -78,15 +78,15 @@ class generic_error : virtual public std::runtime_error
   public:
     [[nodiscard]] generic_error() : std::runtime_error(SDL_GetError()) {}
 
-    [[nodiscard]] generic_error(const generic_error &other) noexcept = default;
-    generic_error &operator=(const generic_error &other) noexcept = default;
+    [[nodiscard]] generic_error(const generic_error& other) noexcept = default;
+    generic_error& operator=(const generic_error& other) noexcept = default;
 
-    [[nodiscard]] generic_error(generic_error &&other) noexcept = default;
-    generic_error &operator=(generic_error &&other) noexcept = default;
+    [[nodiscard]] generic_error(generic_error&& other) noexcept = default;
+    generic_error& operator=(generic_error&& other) noexcept = default;
 
     ~generic_error() noexcept override = default;
 
-    [[nodiscard]] static const char *error() noexcept
+    [[nodiscard]] static const char* error() noexcept
     {
         return SDL_GetError();
     }
@@ -132,7 +132,7 @@ class texture_from_surface final : virtual public generic_error
 
 struct WindowDeleter
 {
-    void operator()(SDL_Window *window) noexcept
+    void operator()(SDL_Window* window) noexcept
     {
         SDL_DestroyWindow(window);
     }
@@ -140,7 +140,7 @@ struct WindowDeleter
 
 struct RendererDeleter
 {
-    void operator()(SDL_Renderer *window) noexcept
+    void operator()(SDL_Renderer* window) noexcept
     {
         SDL_DestroyRenderer(window);
     }
@@ -148,7 +148,7 @@ struct RendererDeleter
 
 struct TextureDeleter
 {
-    void operator()(SDL_Texture *surface) noexcept
+    void operator()(SDL_Texture* surface) noexcept
     {
         SDL_DestroyTexture(surface);
     }
@@ -156,7 +156,7 @@ struct TextureDeleter
 
 struct SurfaceDeleter
 {
-    void operator()(SDL_Surface *surface) noexcept
+    void operator()(SDL_Surface* surface) noexcept
     {
         SDL_FreeSurface(surface);
     }
@@ -167,29 +167,29 @@ using RendererUniquePtr = std::unique_ptr<SDL_Renderer, RendererDeleter>;
 using TextureUniquePtr = std::unique_ptr<SDL_Texture, TextureDeleter>;
 using SurfaceUniquePtr = std::unique_ptr<SDL_Surface, SurfaceDeleter>;
 
-[[nodiscard]] WindowUniquePtr make_window(const char *title, int x_position, int y_position,
+[[nodiscard]] WindowUniquePtr make_window(const char* title, int x_position, int y_position,
                                           int width, int height, Uint32 flags);
-[[nodiscard]] WindowUniquePtr make_window(const WindowConfig &config);
+[[nodiscard]] WindowUniquePtr make_window(const WindowConfig& config);
 
-[[nodiscard]] RendererUniquePtr make_renderer(SDL_Window *window, int index, Uint32 flags);
-[[nodiscard]] RendererUniquePtr make_renderer(SDL_Window *window, const RendererConfig &config);
+[[nodiscard]] RendererUniquePtr make_renderer(SDL_Window* window, int index, Uint32 flags);
+[[nodiscard]] RendererUniquePtr make_renderer(SDL_Window* window, const RendererConfig& config);
 
-[[nodiscard]] TextureUniquePtr make_texture_from_surface(SDL_Renderer *renderer,
-                                                         SDL_Surface *surface);
+[[nodiscard]] TextureUniquePtr make_texture_from_surface(SDL_Renderer* renderer,
+                                                         SDL_Surface* surface);
 
-[[nodiscard]] SurfaceUniquePtr load_bmp(const std::string &filename);
+[[nodiscard]] SurfaceUniquePtr load_bmp(const std::string& filename);
 
 [[nodiscard]] SurfaceUniquePtr convert_surface(SurfaceUniquePtr surface,
-                                               const SDL_PixelFormat *format, Uint32 flags = 0);
+                                               const SDL_PixelFormat* format, Uint32 flags = 0);
 
 class Renderer
 {
   public:
-    Renderer(SDL_Window *window, int index, Uint32 flags)
+    Renderer(SDL_Window* window, int index, Uint32 flags)
         : renderer_{make_renderer(window, index, flags)}
     {}
 
-    Renderer(SDL_Window *window, const RendererConfig &config)
+    Renderer(SDL_Window* window, const RendererConfig& config)
         : renderer_{make_renderer(window, config)}
     {}
 
@@ -200,7 +200,7 @@ class Renderer
         return renderer_.get();
     }
 
-    void set_draw_color(const Color &color) const
+    void set_draw_color(const Color& color) const
     {
         if (SDL_SetRenderDrawColor(get(), color.r, color.g, color.b, color.a) != 0) {
             throw exception::generic_error{};
@@ -220,16 +220,16 @@ class Renderer
     }
 
     template <class T>
-    void fill_rectangle(const Rectangle<T> &rectangle);
+    void fill_rectangle(const Rectangle<T>& rectangle);
 
     template <class T>
     void fill_rectangles(std::span<Rectangle<T>> rectangles);
 
     template <typename DestinationT>
-    void copy(SDL_Texture &texture, const Rectangle<int> &source,
-              const Rectangle<DestinationT> &destination);
+    void copy(SDL_Texture& texture, const Rectangle<int>& source,
+              const Rectangle<DestinationT>& destination);
 
-    TextureUniquePtr make_texture_from_surface(SDL_Surface *surface);
+    TextureUniquePtr make_texture_from_surface(SDL_Surface* surface);
 
   private:
     RendererUniquePtr renderer_;
@@ -241,11 +241,11 @@ class Window
     using OptionalReference = std::optional<std::reference_wrapper<T>>;
 
   public:
-    Window(const char *title, int x_position, int y_position, int width, int height, Uint32 flags)
+    Window(const char* title, int x_position, int y_position, int width, int height, Uint32 flags)
         : Window(make_window(title, x_position, y_position, width, height, flags))
     {}
 
-    Window(const WindowConfig &config)
+    Window(const WindowConfig& config)
         : Window(config.title, config.x_position, config.y_position, config.width, config.height,
                  config.flags)
     {}
@@ -257,7 +257,7 @@ class Window
         return window_.get();
     }
 
-    void enable_renderer(const RendererConfig &config) {}
+    void enable_renderer(const RendererConfig& config) {}
 
   private:
     WindowUniquePtr window_;
@@ -273,11 +273,11 @@ class Application
         }
     }
 
-    [[nodiscard]] Application(const Application &other) = delete;
-    Application operator=(const Application &other) = delete;
+    [[nodiscard]] Application(const Application& other) = delete;
+    Application operator=(const Application& other) = delete;
 
-    [[nodiscard]] Application(Application &&other) noexcept = delete;
-    Application operator=(Application &&other) noexcept = delete;
+    [[nodiscard]] Application(Application&& other) noexcept = delete;
+    Application operator=(Application&& other) noexcept = delete;
 
     ~Application() noexcept
     {

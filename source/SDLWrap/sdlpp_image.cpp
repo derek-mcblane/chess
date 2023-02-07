@@ -4,7 +4,7 @@
 
 namespace sdl::image {
 
-[[nodiscard]] SurfaceUniquePtr load_image(const std::string &filename)
+[[nodiscard]] SurfaceUniquePtr load_image(const std::string& filename)
 {
     SurfaceUniquePtr image{IMG_Load(filename.c_str())};
     if (image == nullptr) {

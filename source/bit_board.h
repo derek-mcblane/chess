@@ -30,18 +30,18 @@ class BitBoard
     BitBoard() : BitBoard(0) {}
     BitBoard(const BitsT bits) : bits_(bits) {}
 
-    BitBoard(const BitBoard &other) = default;
-    BitBoard &operator=(const BitBoard &) = default;
+    BitBoard(const BitBoard& other) = default;
+    BitBoard& operator=(const BitBoard&) = default;
 
-    BitBoard(BitBoard &&other) = default;
-    BitBoard &operator=(BitBoard &&) = default;
+    BitBoard(BitBoard&& other) = default;
+    BitBoard& operator=(BitBoard&&) = default;
 
-    static BitsT position_mask(const Position &position)
+    static BitsT position_mask(const Position& position)
     {
         return (top_left >> (position.row() * board_size) >> (position.column()));
     }
 
-    [[nodiscard]] bool test(const Position &position) const
+    [[nodiscard]] bool test(const Position& position) const
     {
         return (bits_ & position_mask(position)) != 0U;
     }
@@ -51,12 +51,12 @@ class BitBoard
         return std::bitset<board_size * board_size>(bits_).count() != 0U;
     }
 
-    void set(const Position &position)
+    void set(const Position& position)
     {
         bits_ |= position_mask(position);
     }
 
-    void reset(const Position &position)
+    void reset(const Position& position)
     {
         bits_ &= ~position_mask(position);
     }
@@ -65,10 +65,10 @@ class BitBoard
     [[nodiscard]] bool on_edge() const;
 
     template <Direction D>
-    [[nodiscard]] BitBoard shift(const size_t &n = 1) const;
+    [[nodiscard]] BitBoard shift(const size_t& n = 1) const;
 
     template <Direction D>
-    BitBoard dilate(const size_t &n = 1)
+    BitBoard dilate(const size_t& n = 1)
     {
         BitBoard dilated{bits_};
         for (int i = 0; i < n; i++) {
@@ -85,15 +85,15 @@ class BitBoard
         return std::bitset<board_size * board_size>(bits_).to_string();
     }
 
-    bool operator==(const BitBoard &other) const
+    bool operator==(const BitBoard& other) const
     {
         return bits_ == other.bits_;
     }
-    bool operator!=(const BitBoard &other) const
+    bool operator!=(const BitBoard& other) const
     {
         return bits_ != other.bits_;
     }
-    BitBoard &operator<<=(size_t n)
+    BitBoard& operator<<=(size_t n)
     {
         bits_ <<= n;
         return *this;
@@ -104,7 +104,7 @@ class BitBoard
         result.bits_ <<= n;
         return result;
     }
-    BitBoard &operator>>=(size_t n)
+    BitBoard& operator>>=(size_t n)
     {
         bits_ >>= n;
         return *this;
@@ -115,29 +115,29 @@ class BitBoard
         result.bits_ >>= n;
         return result;
     }
-    BitBoard operator|(const BitBoard &other) const
+    BitBoard operator|(const BitBoard& other) const
     {
         BitBoard result{bits_};
         result |= other;
         return result;
     }
-    BitBoard &operator|=(const BitBoard &other)
+    BitBoard& operator|=(const BitBoard& other)
     {
         bits_ |= other.bits_;
         return *this;
     }
-    BitBoard operator&(const BitBoard &other) const
+    BitBoard operator&(const BitBoard& other) const
     {
         BitBoard result{bits_};
         result &= other;
         return result;
     }
-    BitBoard &operator&=(const BitBoard &other)
+    BitBoard& operator&=(const BitBoard& other)
     {
         bits_ &= other.bits_;
         return *this;
     }
-    BitBoard operator^(const BitBoard &other) const
+    BitBoard operator^(const BitBoard& other) const
     {
         return bits_ ^ other.bits_;
     }
