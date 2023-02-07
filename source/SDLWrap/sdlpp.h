@@ -6,6 +6,7 @@
 
 #include <chrono>
 #include <functional>
+#include <iostream>
 #include <memory>
 #include <optional>
 #include <span>
@@ -53,6 +54,22 @@ template <typename T>
 using Rectangle = typename select_rect<T>::type;
 
 using Color = SDL_Color;
+
+struct RendererConfig
+{
+    int index;
+    Uint32 flags;
+};
+
+struct WindowConfig
+{
+    const char *title;
+    int x_position;
+    int y_position;
+    int width;
+    int height;
+    Uint32 flags;
+};
 
 namespace exception {
 
@@ -113,65 +130,6 @@ class texture_from_surface final : virtual public generic_error
 
 } // namespace exception
 
-class Application
-{
-  public:
-    [[nodiscard]] Application(std::uint32_t flags) : flags_{flags}
-    {
-        namespace chrono = std::chrono;
-
-        if (SDL_Init(flags_) < 0) {
-            throw exception::init{};
-        }
-        running_ = true;
-        last_event_process_time_ = chrono::steady_clock::now();
-    }
-
-    [[nodiscard]] Application(const Application &other) = delete;
-    Application operator=(const Application &other) = delete;
-
-    [[nodiscard]] Application(Application &&other) noexcept = delete;
-    Application operator=(Application &&other) noexcept = delete;
-
-    ~Application() noexcept
-    {
-        SDL_Quit();
-    }
-
-    [[nodiscard]] bool running() const noexcept
-    {
-        return running_;
-    }
-
-    void process_events()
-    {
-        namespace chrono = std::chrono;
-        SDL_Event event;
-        while (SDL_PollEvent(&event) != 0) {
-            switch (event.type) {
-            case SDL_QUIT:
-                on_sdl_quit_event();
-                break;
-            default:
-                break;
-            }
-        }
-        auto event_process_time = chrono::steady_clock::now();
-        std::this_thread::sleep_until(last_event_process_time_ + chrono::milliseconds(25));
-        last_event_process_time_ = event_process_time;
-    }
-
-  private:
-    bool running_{false};
-    Uint32 flags_;
-    std::chrono::steady_clock::time_point last_event_process_time_;
-
-    void on_sdl_quit_event() noexcept
-    {
-        running_ = false;
-    }
-};
-
 struct WindowDeleter
 {
     void operator()(SDL_Window *window) noexcept
@@ -211,8 +169,10 @@ using SurfaceUniquePtr = std::unique_ptr<SDL_Surface, SurfaceDeleter>;
 
 [[nodiscard]] WindowUniquePtr make_window(const char *title, int x_position, int y_position,
                                           int width, int height, Uint32 flags);
+[[nodiscard]] WindowUniquePtr make_window(const WindowConfig &config);
 
 [[nodiscard]] RendererUniquePtr make_renderer(SDL_Window *window, int index, Uint32 flags);
+[[nodiscard]] RendererUniquePtr make_renderer(SDL_Window *window, const RendererConfig &config);
 
 [[nodiscard]] TextureUniquePtr make_texture_from_surface(SDL_Renderer *renderer,
                                                          SDL_Surface *surface);
@@ -225,25 +185,38 @@ using SurfaceUniquePtr = std::unique_ptr<SDL_Surface, SurfaceDeleter>;
 class Renderer
 {
   public:
-    Renderer(RendererUniquePtr renderer) : renderer_(std::move(renderer)) {}
+    Renderer(SDL_Window *window, int index, Uint32 flags)
+        : renderer_{make_renderer(window, index, flags)}
+    {}
 
-    void set_draw_color(const Color &color)
+    Renderer(SDL_Window *window, const RendererConfig &config)
+        : renderer_{make_renderer(window, config)}
+    {}
+
+    Renderer(RendererUniquePtr renderer) : renderer_{std::move(renderer)} {}
+
+    [[nodiscard]] RendererUniquePtr::pointer get() const noexcept
     {
-        if (SDL_SetRenderDrawColor(renderer_.get(), color.r, color.g, color.b, color.a) != 0) {
+        return renderer_.get();
+    }
+
+    void set_draw_color(const Color &color) const
+    {
+        if (SDL_SetRenderDrawColor(get(), color.r, color.g, color.b, color.a) != 0) {
             throw exception::generic_error{};
         }
     }
 
-    void clear()
+    void clear() const
     {
-        if (SDL_RenderClear(renderer_.get()) != 0) {
+        if (SDL_RenderClear(get()) != 0) {
             throw exception::generic_error{};
         }
     }
 
-    void present()
+    void present() const
     {
-        SDL_RenderPresent(renderer_.get());
+        SDL_RenderPresent(get());
     }
 
     template <class T>
@@ -260,6 +233,56 @@ class Renderer
 
   private:
     RendererUniquePtr renderer_;
+};
+
+class Window
+{
+    template <typename T>
+    using OptionalReference = std::optional<std::reference_wrapper<T>>;
+
+  public:
+    Window(const char *title, int x_position, int y_position, int width, int height, Uint32 flags)
+        : Window(make_window(title, x_position, y_position, width, height, flags))
+    {}
+
+    Window(const WindowConfig &config)
+        : Window(config.title, config.x_position, config.y_position, config.width, config.height,
+                 config.flags)
+    {}
+
+    Window(WindowUniquePtr window) : window_(std::move(window)) {}
+
+    [[nodiscard]] WindowUniquePtr::pointer get_pointer() const noexcept
+    {
+        return window_.get();
+    }
+
+    void enable_renderer(const RendererConfig &config) {}
+
+  private:
+    WindowUniquePtr window_;
+};
+
+class Application
+{
+  public:
+    [[nodiscard]] Application(Uint32 flags)
+    {
+        if (SDL_Init(flags) < 0) {
+            throw exception::init{};
+        }
+    }
+
+    [[nodiscard]] Application(const Application &other) = delete;
+    Application operator=(const Application &other) = delete;
+
+    [[nodiscard]] Application(Application &&other) noexcept = delete;
+    Application operator=(Application &&other) noexcept = delete;
+
+    ~Application() noexcept
+    {
+        SDL_Quit();
+    }
 };
 
 } // namespace sdl

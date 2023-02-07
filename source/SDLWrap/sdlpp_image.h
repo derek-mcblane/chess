@@ -16,14 +16,14 @@ class generic_error : virtual public std::runtime_error
     [[nodiscard]] generic_error() : std::runtime_error(IMG_GetError()) {}
 
     [[nodiscard]] generic_error(const generic_error &other) noexcept = default;
-    generic_error &operator=(const generic_error &other) noexcept    = default;
+    generic_error &operator=(const generic_error &other) noexcept = default;
 
     [[nodiscard]] generic_error(generic_error &&other) noexcept = default;
-    generic_error &operator=(generic_error &&other) noexcept    = default;
+    generic_error &operator=(generic_error &&other) noexcept = default;
 
     ~generic_error() noexcept override = default;
 
-    [[nodiscard]] static const char *error()  noexcept
+    [[nodiscard]] static const char *error() noexcept
     {
         return IMG_GetError();
     }
@@ -52,10 +52,10 @@ class Extensions
         load(flags);
     }
 
-    Extensions(const Extensions &)            = delete;
+    Extensions(const Extensions &) = delete;
     Extensions &operator=(const Extensions &) = delete;
 
-    Extensions(Extensions &&)            = delete;
+    Extensions(Extensions &&) = delete;
     Extensions &operator=(Extensions &&) = delete;
 
     ~Extensions()
