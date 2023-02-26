@@ -106,9 +106,6 @@ int main(int argc, char* argv[])
             }
         }
 
-        int piece_width = piece_sprites_size.x / static_cast<int>(n_pieces);
-        int piece_height = piece_sprites_size.y / static_cast<int>(n_colors);
-
         int piece_i = 3;
         int color_i = 1;
         auto pieces_sprites_rect = piece_sprites_grid.get_region({piece_i, color_i});
@@ -120,7 +117,8 @@ int main(int argc, char* argv[])
         renderer.copy<int>(*piece_sprites, pieces_sprites_rect, screen_rect);
 
         renderer.set_draw_color(sdl::pallete::gray);
-        renderer.fill_rectangle<int>(sdl::Rectangle<int>{250, 250, 50, 50});
+        constexpr auto rectangle = sdl::Rectangle<int>{250, 250, 50, 50};
+        renderer.fill_rectangle(rectangle);
 
         renderer.present();
 

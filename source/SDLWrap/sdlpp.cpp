@@ -64,7 +64,7 @@ namespace sdl {
 }
 
 template <>
-void Renderer::fill_rectangle<int>(const Rectangle<int>& rectangle)
+void Renderer::fill_rectangle<Rectangle<int>>(const Rectangle<int>& rectangle)
 {
     if (SDL_RenderFillRect(renderer_.get(), &rectangle) != 0) {
         throw exception::generic_error{};
@@ -72,7 +72,7 @@ void Renderer::fill_rectangle<int>(const Rectangle<int>& rectangle)
 }
 
 template <>
-void Renderer::fill_rectangle<float>(const Rectangle<float>& rectangle)
+void Renderer::fill_rectangle<Rectangle<float>>(const Rectangle<float>& rectangle)
 {
     if (SDL_RenderFillRectF(renderer_.get(), &rectangle) != 0) {
         throw exception::generic_error{};

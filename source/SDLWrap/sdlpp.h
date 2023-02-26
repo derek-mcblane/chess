@@ -32,8 +32,7 @@ struct select_point<float>
 };
 
 template <typename T>
-class Point : public select_point<T>::type
-{};
+using Point = typename select_point<T>::type;
 
 template <typename T>
 struct select_rect;
@@ -219,11 +218,11 @@ class Renderer
         SDL_RenderPresent(get());
     }
 
-    template <class T>
-    void fill_rectangle(const Rectangle<T>& rectangle);
+    template <typename Rectangle>
+    void fill_rectangle(const Rectangle& rectangle);
 
-    template <class T>
-    void fill_rectangles(std::span<Rectangle<T>> rectangles);
+    template <typename Rectangle>
+    void fill_rectangles(std::span<Rectangle> rectangles);
 
     template <typename DestinationT>
     void copy(SDL_Texture& texture, const Rectangle<int>& source,
