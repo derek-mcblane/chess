@@ -183,49 +183,49 @@ using SurfaceUniquePtr = std::unique_ptr<SDL_Surface, SurfaceDeleter>;
 class Texture
 {
   public:
-    Texture(TextureUniquePtr texture) : texture_{std::move(texture)} {}
+    Texture(TextureUniquePtr texture) noexcept : texture_{std::move(texture)} {}
 
     [[nodiscard]] TextureUniquePtr::pointer get() const noexcept
     {
         return texture_.get();
     }
 
-    [[nodiscard]] Uint32 format() const
+    [[nodiscard]] Uint32 format() const noexcept
     {
         Uint32 format;
         SDL_QueryTexture(get(), &format, nullptr, nullptr, nullptr);
         return format;
     }
 
-    [[nodiscard]] int access() const
+    [[nodiscard]] int access() const noexcept
     {
         int access;
         SDL_QueryTexture(get(), nullptr, &access, nullptr, nullptr);
         return access;
     }
 
-    [[nodiscard]] int width() const
+    [[nodiscard]] int width() const noexcept
     {
         int width;
         SDL_QueryTexture(get(), nullptr, nullptr, &width, nullptr);
         return width;
     }
 
-    [[nodiscard]] int height() const
+    [[nodiscard]] int height() const noexcept
     {
         int height;
         SDL_QueryTexture(get(), nullptr, nullptr, nullptr, &height);
         return height;
     }
 
-    [[nodiscard]] Point<int> size() const
+    [[nodiscard]] Point<int> size() const noexcept
     {
         Point<int> size;
         SDL_QueryTexture(get(), nullptr, nullptr, &size.x, &size.y);
         return size;
     }
 
-    operator SDL_Texture&() const
+    operator SDL_Texture&() const noexcept
     {
         return *get();
     }
@@ -262,7 +262,7 @@ class Renderer
         }
     }
 
-    void present() const
+    void present() const noexcept
     {
         SDL_RenderPresent(get());
     }

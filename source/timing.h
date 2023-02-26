@@ -80,7 +80,7 @@ class MinimumPeriodWait
         beginning_ = now;
     }
 
-    [[nodiscard]] duration previous_interval_duration() const
+    [[nodiscard]] duration previous_interval_duration() const noexcept
     {
         return elapsed_;
     }
