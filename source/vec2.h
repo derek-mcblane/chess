@@ -11,7 +11,7 @@
 
 namespace dm {
 
-template <class T>
+template <typename T>
 class Vec2
 {
   public:
@@ -76,19 +76,19 @@ class Vec2
         return {lhs.x() + rhs.x(), lhs.y() + rhs.y()};
     }
 
-    template <class U>
+    template <typename U>
     [[nodiscard]] friend constexpr Vec2<T> operator*(U n, const Vec2<T>& value) noexcept
     {
         return {n * value.x(), n * value.y()};
     }
 
-    template <class U>
+    template <typename U>
     [[nodiscard]] friend constexpr Vec2<T> operator*(const Vec2<T>& value, U n) noexcept
     {
         return n * value;
     }
 
-    template <class U>
+    template <typename U>
     [[nodiscard]] friend constexpr Vec2<T> operator/(const Vec2<T>& value, U n) noexcept
     {
         return {value.x() / n, value.y() / n};
@@ -226,7 +226,7 @@ class Vec2
     }
 };
 
-template <class T>
+template <typename T>
 class Coord : public Vec2<T>
 {
   public:
@@ -274,7 +274,7 @@ class Coord : public Vec2<T>
     }
 };
 
-template <class T>
+template <typename T>
 class Size : public Vec2<T>
 {
   public:
@@ -312,7 +312,7 @@ class Size : public Vec2<T>
     }
 };
 
-template <class Vec2Container>
+template <typename Vec2Container>
 [[nodiscard]] std::optional<typename Vec2Container::value_type::dimension_type>
 min_x(const Vec2Container& vec2s)
 {
@@ -324,7 +324,7 @@ min_x(const Vec2Container& vec2s)
         ->x();
 }
 
-template <class Vec2Container>
+template <typename Vec2Container>
 [[nodiscard]] std::optional<typename Vec2Container::value_type::dimension_type>
 max_x(const Vec2Container& vec2s)
 {
@@ -336,7 +336,7 @@ max_x(const Vec2Container& vec2s)
         ->x();
 }
 
-template <class Vec2Container>
+template <typename Vec2Container>
 [[nodiscard]] std::optional<typename Vec2Container::value_type::dimension_type>
 min_y(const Vec2Container& vec2s)
 {
@@ -348,7 +348,7 @@ min_y(const Vec2Container& vec2s)
         ->y();
 }
 
-template <class Vec2Container>
+template <typename Vec2Container>
 [[nodiscard]] std::optional<typename Vec2Container::value_type::dimension_type>
 max_y(const Vec2Container& vec2s)
 {
@@ -360,7 +360,7 @@ max_y(const Vec2Container& vec2s)
         ->y();
 }
 
-template <class Vec2Container>
+template <typename Vec2Container>
 [[nodiscard]] std::optional<typename Vec2Container::value_type>
 min_extent(const Vec2Container& vec2s)
 {
@@ -370,7 +370,7 @@ min_extent(const Vec2Container& vec2s)
     return {*min_x(vec2s), *min_y(vec2s)};
 }
 
-template <class Vec2Container>
+template <typename Vec2Container>
 [[nodiscard]] std::optional<typename Vec2Container::value_type>
 max_extent(const Vec2Container& vec2s)
 {
@@ -380,7 +380,7 @@ max_extent(const Vec2Container& vec2s)
     return {*max_x(vec2s), *max_y(vec2s)};
 }
 
-template <class Vec2Container>
+template <typename Vec2Container>
 [[nodiscard]] std::optional<
     std::pair<typename Vec2Container::value_type, typename Vec2Container::value_type>>
 extents(const Vec2Container& vec2s)
@@ -394,7 +394,7 @@ extents(const Vec2Container& vec2s)
 } // namespace dm
 
 namespace std {
-template <class T>
+template <typename T>
 struct hash<dm::Vec2<T>>
 {
     size_t operator()(const dm::Vec2<T>& value) const
