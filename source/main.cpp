@@ -86,11 +86,9 @@ int main(int argc, char* argv[])
     auto window = sdl::Window{window_config};
     auto renderer = sdl::Renderer{window.get_pointer(), renderer_config};
 
-    auto piece_sprites =
-        renderer.make_texture_from_surface(sdl::image::load_image("resources/pieces_sprite_map.png").get());
-    sdl::Point<int> piece_sprites_size;
-    SDL_QueryTexture(piece_sprites.get(), nullptr, nullptr, &piece_sprites_size.x, &piece_sprites_size.y);
-    SpriteMapGrid piece_sprites_grid{piece_sprites_size, {n_pieces, n_colors}};
+    auto piece_sprites = sdl::Texture{
+        renderer.make_texture_from_surface(sdl::image::load_image("resources/pieces_sprite_map.png").get())};
+    SpriteMapGrid piece_sprites_grid{piece_sprites.size(), {n_pieces, n_colors}};
 
     bool running{true};
     MinimumPeriodWait minimum_frame_delay{std::chrono::milliseconds{min_frame_period_ms}};
@@ -117,7 +115,7 @@ int main(int argc, char* argv[])
 
         const auto pieces_sprites_rect = piece_sprites_grid.get_region({3, 1});
         constexpr auto screen_rect = sdl::Rectangle<int>{0, 0, 200, 200};
-        renderer.copy<int>(*piece_sprites, pieces_sprites_rect, screen_rect);
+        renderer.copy<int>(piece_sprites, pieces_sprites_rect, screen_rect);
 
         renderer.set_draw_color(sdl::pallete::gray);
         constexpr auto rectangle = sdl::Rectangle<int>{250, 250, 50, 50};

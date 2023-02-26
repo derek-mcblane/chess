@@ -225,6 +225,11 @@ class Texture
         return size;
     }
 
+    operator SDL_Texture&() const
+    {
+        return *get();
+    }
+
   private:
     TextureUniquePtr texture_;
 };
