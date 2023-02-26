@@ -180,6 +180,55 @@ using SurfaceUniquePtr = std::unique_ptr<SDL_Surface, SurfaceDeleter>;
 [[nodiscard]] SurfaceUniquePtr convert_surface(SurfaceUniquePtr surface, const SDL_PixelFormat* format,
                                                Uint32 flags = 0);
 
+class Texture
+{
+  public:
+    Texture(TextureUniquePtr texture) : texture_{std::move(texture)} {}
+
+    [[nodiscard]] TextureUniquePtr::pointer get() const noexcept
+    {
+        return texture_.get();
+    }
+
+    [[nodiscard]] Uint32 format() const
+    {
+        Uint32 format;
+        SDL_QueryTexture(get(), &format, nullptr, nullptr, nullptr);
+        return format;
+    }
+
+    [[nodiscard]] int access() const
+    {
+        int access;
+        SDL_QueryTexture(get(), nullptr, &access, nullptr, nullptr);
+        return access;
+    }
+
+    [[nodiscard]] int width() const
+    {
+        int width;
+        SDL_QueryTexture(get(), nullptr, nullptr, &width, nullptr);
+        return width;
+    }
+
+    [[nodiscard]] int height() const
+    {
+        int height;
+        SDL_QueryTexture(get(), nullptr, nullptr, nullptr, &height);
+        return height;
+    }
+
+    [[nodiscard]] Point<int> size() const
+    {
+        Point<int> size;
+        SDL_QueryTexture(get(), nullptr, nullptr, &size.x, &size.y);
+        return size;
+    }
+
+  private:
+    TextureUniquePtr texture_;
+};
+
 class Renderer
 {
   public:
