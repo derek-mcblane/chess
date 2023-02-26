@@ -284,9 +284,6 @@ class Renderer
 
 class Window
 {
-    template <typename T>
-    using OptionalReference = std::optional<std::reference_wrapper<T>>;
-
   public:
     Window(const char* title, int x_position, int y_position, int width, int height, Uint32 flags)
         : Window(make_window(title, x_position, y_position, width, height, flags))
@@ -302,8 +299,6 @@ class Window
     {
         return window_.get();
     }
-
-    void enable_renderer(const RendererConfig& config) {}
 
   private:
     WindowUniquePtr window_;
