@@ -1,14 +1,22 @@
 #include "sdlpp.h"
 #include "sdlpp_image.h"
+#include "timing.h"
 
 #include <SDL_render.h>
 #include <gsl/gsl>
 
+#include <chrono>
 #include <exception>
 #include <iostream>
 #include <memory>
 #include <string>
 #include <thread>
+
+template <typename Rep, typename Period>
+Rep to_milliseconds(std::chrono::duration<Rep, Period> duration)
+{
+    return std::chrono::duration_cast<std::chrono::milliseconds>(duration).count();
+}
 
 namespace sdl::pallete {
 
@@ -85,10 +93,8 @@ int main(int argc, char* argv[])
     SpriteMapGrid piece_sprites_grid{piece_sprites_size, {n_pieces, n_colors}};
 
     bool running{true};
-    auto previous_frame_start_time = std::chrono::steady_clock::now();
+    MinimumPeriodWait minimum_frame_delay{std::chrono::milliseconds{min_frame_period_ms}};
     while (running) {
-        std::cout << "loop\n";
-        auto frame_start_time = std::chrono::steady_clock::now();
         SDL_Event event;
         while (SDL_PollEvent(&event) != 0) {
             switch (event.type) {
@@ -122,8 +128,9 @@ int main(int argc, char* argv[])
 
         renderer.present();
 
-        std::this_thread::sleep_until(previous_frame_start_time + min_frame_period_seconds);
-        previous_frame_start_time = frame_start_time;
+        minimum_frame_delay.end_interval();
+        const auto frame_duration = minimum_frame_delay.previous_interval_duration();
+        std::cout << to_milliseconds(frame_duration) << " ms\n";
     }
 
     return 0;
