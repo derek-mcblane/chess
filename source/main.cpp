@@ -33,8 +33,7 @@ class SpriteMapGrid
 
 sdl::Rectangle<int> SpriteMapGrid::get_region(sdl::Point<int> coordinate) const
 {
-    return {
-        .x = coordinate.x * pitch_.x, .y = coordinate.y * pitch_.y, .w = pitch_.x, .h = pitch_.y};
+    return {.x = coordinate.x * pitch_.x, .y = coordinate.y * pitch_.y, .w = pitch_.x, .h = pitch_.y};
 }
 
 enum class Colors : int
@@ -64,28 +63,25 @@ int main(int argc, char* argv[])
 
     constexpr sdl::Rectangle<int> screen_region{0, 0, 640, 480};
     constexpr int max_frame_rate_per_second = 100;
-    constexpr auto min_frame_period_seconds =
-        std::chrono::milliseconds(1'000) / max_frame_rate_per_second;
+    constexpr auto min_frame_period_ms = std::chrono::milliseconds(1'000) / max_frame_rate_per_second;
 
-    constexpr auto window_config =
-        sdl::WindowConfig{.title = "SDL Application",
-                          .x_position = SDL_WINDOWPOS_UNDEFINED,
-                          .y_position = SDL_WINDOWPOS_UNDEFINED,
-                          .width = screen_region.w,
-                          .height = screen_region.h,
-                          .flags = SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE};
+    constexpr auto window_config = sdl::WindowConfig{.title = "SDL Application",
+                                                     .x_position = SDL_WINDOWPOS_UNDEFINED,
+                                                     .y_position = SDL_WINDOWPOS_UNDEFINED,
+                                                     .width = screen_region.w,
+                                                     .height = screen_region.h,
+                                                     .flags = SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE};
 
-    constexpr auto renderer_config = sdl::RendererConfig{
-        .index = -1, .flags = SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC};
+    constexpr auto renderer_config =
+        sdl::RendererConfig{.index = -1, .flags = SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC};
 
     auto window = sdl::Window{window_config};
     auto renderer = sdl::Renderer{window.get_pointer(), renderer_config};
 
-    auto piece_sprites = renderer.make_texture_from_surface(
-        sdl::image::load_image("resources/pieces_sprite_map.png").get());
+    auto piece_sprites =
+        renderer.make_texture_from_surface(sdl::image::load_image("resources/pieces_sprite_map.png").get());
     sdl::Point<int> piece_sprites_size;
-    SDL_QueryTexture(piece_sprites.get(), nullptr, nullptr, &piece_sprites_size.x,
-                     &piece_sprites_size.y);
+    SDL_QueryTexture(piece_sprites.get(), nullptr, nullptr, &piece_sprites_size.x, &piece_sprites_size.y);
     SpriteMapGrid piece_sprites_grid{piece_sprites_size, {n_pieces, n_colors}};
 
     bool running{true};

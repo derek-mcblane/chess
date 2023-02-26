@@ -2,8 +2,8 @@
 
 namespace sdl {
 
-[[nodiscard]] WindowUniquePtr make_window(const char* title, int x_position, int y_position,
-                                          int width, int height, Uint32 flags)
+[[nodiscard]] WindowUniquePtr make_window(const char* title, int x_position, int y_position, int width, int height,
+                                          Uint32 flags)
 {
     WindowUniquePtr window{SDL_CreateWindow(title, x_position, y_position, width, height, flags)};
     if (window == nullptr) {
@@ -14,8 +14,7 @@ namespace sdl {
 
 [[nodiscard]] WindowUniquePtr make_window(const WindowConfig& config)
 {
-    return make_window(config.title, config.x_position, config.y_position, config.width,
-                       config.height, config.flags);
+    return make_window(config.title, config.x_position, config.y_position, config.width, config.height, config.flags);
 }
 
 [[nodiscard]] RendererUniquePtr make_renderer(SDL_Window* window, int index, Uint32 flags)
@@ -32,8 +31,7 @@ namespace sdl {
     return make_renderer(window, config.index, config.flags);
 }
 
-[[nodiscard]] TextureUniquePtr make_texture_from_surface(SDL_Renderer* renderer,
-                                                         SDL_Surface* surface)
+[[nodiscard]] TextureUniquePtr make_texture_from_surface(SDL_Renderer* renderer, SDL_Surface* surface)
 {
     TextureUniquePtr texture{SDL_CreateTextureFromSurface(renderer, surface)};
     if (texture == nullptr) {
@@ -56,8 +54,7 @@ namespace sdl {
     return image;
 }
 
-[[nodiscard]] SurfaceUniquePtr convert_surface(SurfaceUniquePtr surface,
-                                               const SDL_PixelFormat* format, Uint32 flags)
+[[nodiscard]] SurfaceUniquePtr convert_surface(SurfaceUniquePtr surface, const SDL_PixelFormat* format, Uint32 flags)
 {
     SurfaceUniquePtr converted_surface{SDL_ConvertSurface(surface.get(), format, flags)};
     if (converted_surface == nullptr) {
@@ -83,26 +80,23 @@ void Renderer::fill_rectangle<float>(const Rectangle<float>& rectangle)
 }
 
 template <>
-void Renderer::fill_rectangles<int>(std::span<Rectangle<int>> rectangles)
+void Renderer::fill_rectangles<Rectangle<int>>(std::span<Rectangle<int>> rectangles)
 {
-    if (SDL_RenderFillRects(renderer_.get(), rectangles.data(),
-                            gsl::narrow<int>(rectangles.size())) != 0) {
+    if (SDL_RenderFillRects(renderer_.get(), rectangles.data(), gsl::narrow<int>(rectangles.size())) != 0) {
         throw exception::generic_error{};
     }
 }
 
 template <>
-void Renderer::fill_rectangles<float>(std::span<Rectangle<float>> rectangles)
+void Renderer::fill_rectangles<Rectangle<float>>(std::span<Rectangle<float>> rectangles)
 {
-    if (SDL_RenderFillRectsF(renderer_.get(), rectangles.data(),
-                             gsl::narrow<int>(rectangles.size())) != 0) {
+    if (SDL_RenderFillRectsF(renderer_.get(), rectangles.data(), gsl::narrow<int>(rectangles.size())) != 0) {
         throw exception::generic_error{};
     }
 }
 
 template <>
-void Renderer::copy<int>(SDL_Texture& texture, const Rectangle<int>& source,
-                         const Rectangle<int>& destination)
+void Renderer::copy<int>(SDL_Texture& texture, const Rectangle<int>& source, const Rectangle<int>& destination)
 {
     if (SDL_RenderCopy(renderer_.get(), &texture, &source, &destination) != 0) {
         throw exception::generic_error{};
@@ -110,8 +104,7 @@ void Renderer::copy<int>(SDL_Texture& texture, const Rectangle<int>& source,
 }
 
 template <>
-void Renderer::copy<float>(SDL_Texture& texture, const Rectangle<int>& source,
-                           const Rectangle<float>& destination)
+void Renderer::copy<float>(SDL_Texture& texture, const Rectangle<int>& source, const Rectangle<float>& destination)
 {
     if (SDL_RenderCopyF(renderer_.get(), &texture, &source, &destination) != 0) {
         throw exception::generic_error{};
