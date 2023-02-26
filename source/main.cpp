@@ -112,14 +112,11 @@ int main(int argc, char* argv[])
             }
         }
 
-        int piece_i = 3;
-        int color_i = 1;
-        auto pieces_sprites_rect = piece_sprites_grid.get_region({piece_i, color_i});
-        const auto screen_rect = sdl::Rectangle<int>{0, 0, 200, 200};
-
         renderer.set_draw_color(sdl::pallete::white);
         renderer.clear();
 
+        const auto pieces_sprites_rect = piece_sprites_grid.get_region({3, 1});
+        constexpr auto screen_rect = sdl::Rectangle<int>{0, 0, 200, 200};
         renderer.copy<int>(*piece_sprites, pieces_sprites_rect, screen_rect);
 
         renderer.set_draw_color(sdl::pallete::gray);
