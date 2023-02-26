@@ -166,31 +166,26 @@ using RendererUniquePtr = std::unique_ptr<SDL_Renderer, RendererDeleter>;
 using TextureUniquePtr = std::unique_ptr<SDL_Texture, TextureDeleter>;
 using SurfaceUniquePtr = std::unique_ptr<SDL_Surface, SurfaceDeleter>;
 
-[[nodiscard]] WindowUniquePtr make_window(const char* title, int x_position, int y_position,
-                                          int width, int height, Uint32 flags);
+[[nodiscard]] WindowUniquePtr make_window(const char* title, int x_position, int y_position, int width, int height,
+                                          Uint32 flags);
 [[nodiscard]] WindowUniquePtr make_window(const WindowConfig& config);
 
 [[nodiscard]] RendererUniquePtr make_renderer(SDL_Window* window, int index, Uint32 flags);
 [[nodiscard]] RendererUniquePtr make_renderer(SDL_Window* window, const RendererConfig& config);
 
-[[nodiscard]] TextureUniquePtr make_texture_from_surface(SDL_Renderer* renderer,
-                                                         SDL_Surface* surface);
+[[nodiscard]] TextureUniquePtr make_texture_from_surface(SDL_Renderer* renderer, SDL_Surface* surface);
 
 [[nodiscard]] SurfaceUniquePtr load_bmp(const std::string& filename);
 
-[[nodiscard]] SurfaceUniquePtr convert_surface(SurfaceUniquePtr surface,
-                                               const SDL_PixelFormat* format, Uint32 flags = 0);
+[[nodiscard]] SurfaceUniquePtr convert_surface(SurfaceUniquePtr surface, const SDL_PixelFormat* format,
+                                               Uint32 flags = 0);
 
 class Renderer
 {
   public:
-    Renderer(SDL_Window* window, int index, Uint32 flags)
-        : renderer_{make_renderer(window, index, flags)}
-    {}
+    Renderer(SDL_Window* window, int index, Uint32 flags) : renderer_{make_renderer(window, index, flags)} {}
 
-    Renderer(SDL_Window* window, const RendererConfig& config)
-        : renderer_{make_renderer(window, config)}
-    {}
+    Renderer(SDL_Window* window, const RendererConfig& config) : renderer_{make_renderer(window, config)} {}
 
     Renderer(RendererUniquePtr renderer) : renderer_{std::move(renderer)} {}
 
@@ -225,8 +220,7 @@ class Renderer
     void fill_rectangles(std::span<Rectangle> rectangles);
 
     template <typename DestinationT>
-    void copy(SDL_Texture& texture, const Rectangle<int>& source,
-              const Rectangle<DestinationT>& destination);
+    void copy(SDL_Texture& texture, const Rectangle<int>& source, const Rectangle<DestinationT>& destination);
 
     TextureUniquePtr make_texture_from_surface(SDL_Surface* surface);
 
@@ -245,8 +239,7 @@ class Window
     {}
 
     Window(const WindowConfig& config)
-        : Window(config.title, config.x_position, config.y_position, config.width, config.height,
-                 config.flags)
+        : Window(config.title, config.x_position, config.y_position, config.width, config.height, config.flags)
     {}
 
     Window(WindowUniquePtr window) : window_(std::move(window)) {}
