@@ -21,8 +21,10 @@ Rep to_milliseconds(std::chrono::duration<Rep, Period> duration)
 namespace sdl::pallete {
 
 constexpr Color black{0x00, 0x00, 0x00, 0xFF};
+constexpr Color tan{0x0F, 0x0F, 0x00, 0xFF};
+constexpr Color blue{0x00, 0x00, 0xFF, 0xFF};
+constexpr Color gray{0x0F, 0x0F, 0x0F, 0xFF};
 constexpr Color white{0xFF, 0xFF, 0xFF, 0xFF};
-constexpr Color gray{0x0F, 0x0F, 0x0F, 0x0F};
 
 } // namespace sdl::pallete
 
@@ -113,13 +115,23 @@ int main(int argc, char* argv[])
         renderer.set_draw_color(sdl::pallete::white);
         renderer.clear();
 
+        constexpr int board_size = 8;
+        const auto window_size = window.size();
+        const auto min_dim = std::min(window_size.x, window_size.y);
+        const int square_size = min_dim / board_size;
+        auto rectangle = sdl::Rectangle<int>{0, 0, square_size, square_size};
+        for (int row = 0; row < board_size; ++row) {
+            for (int col = 0; col < board_size; ++col) {
+                renderer.set_draw_color(((row + col) % 2 == 0) ? sdl::pallete::white : sdl::pallete::blue);
+                rectangle.x = row * square_size;
+                rectangle.y = col * square_size;
+                renderer.fill_rectangle(rectangle);
+            }
+        }
+
         const auto pieces_sprites_rect = piece_sprites_grid.get_region({3, 1});
         constexpr auto screen_rect = sdl::Rectangle<int>{0, 0, 200, 200};
         renderer.copy<int>(piece_sprites, pieces_sprites_rect, screen_rect);
-
-        renderer.set_draw_color(sdl::pallete::gray);
-        constexpr auto rectangle = sdl::Rectangle<int>{250, 250, 50, 50};
-        renderer.fill_rectangle(rectangle);
 
         renderer.present();
 

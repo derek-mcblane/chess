@@ -300,6 +300,12 @@ class Window
         return window_.get();
     }
 
+    [[nodiscard]] Point<int> size() const noexcept {
+        Point<int> size;
+        SDL_GetWindowSize(get_pointer(), &size.x, &size.y);
+        return size;
+    }
+
   private:
     WindowUniquePtr window_;
 };
