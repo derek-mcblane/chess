@@ -2,6 +2,21 @@
 
 namespace sdl {
 
+void add_event_watch(EventFilterCallback callback, void *user_data) noexcept
+{
+    SDL_AddEventWatch(callback, user_data);
+}
+
+void set_event_filter(EventFilterCallback callback, void *user_data) noexcept
+{
+    SDL_SetEventFilter(callback, user_data);
+}
+
+bool get_event_filter(EventFilterCallback* callback, void **user_data) noexcept
+{
+    return static_cast<bool>(SDL_GetEventFilter(callback, user_data));
+}
+
 [[nodiscard]] WindowUniquePtr make_window(const char* title, int x_position, int y_position, int width, int height,
                                           Uint32 flags)
 {

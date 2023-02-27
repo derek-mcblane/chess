@@ -16,6 +16,11 @@
 
 namespace sdl {
 
+using EventFilterCallback = int (*)(void *userdata, SDL_Event *event);
+
+void add_event_watch(EventFilterCallback callback, void *user_data) noexcept;
+void set_event_filter(EventFilterCallback callback, void *user_data) noexcept;
+
 template <typename T>
 struct select_point;
 

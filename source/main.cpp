@@ -66,10 +66,114 @@ enum class Pieces
 };
 static constexpr size_t n_pieces = static_cast<int>(Pieces::n_pieces_);
 
+void handle_window_event(const SDL_Event* event)
+{
+    SDL_WindowEvent window_event = event->window;
+    switch (event->window.event) {
+    case SDL_WINDOWEVENT_SHOWN:
+        std::cout << "Window " << window_event.windowID << " event: ";
+        std::cout << "shown";
+        std::cout << '\n';
+        break;
+    case SDL_WINDOWEVENT_HIDDEN:
+        std::cout << "Window " << window_event.windowID << " event: ";
+        std::cout << "hidden";
+        std::cout << '\n';
+        break;
+    case SDL_WINDOWEVENT_EXPOSED:
+        std::cout << "Window " << window_event.windowID << " event: ";
+        std::cout << "exposed";
+        std::cout << '\n';
+        break;
+    case SDL_WINDOWEVENT_MOVED:
+        std::cout << "Window " << window_event.windowID << " event: ";
+        std::cout << "moved";
+        std::cout << '\n';
+        break;
+    case SDL_WINDOWEVENT_RESIZED:
+        std::cout << "Window " << window_event.windowID << " event: ";
+        std::cout << "resized";
+        std::cout << '\n';
+        break;
+    case SDL_WINDOWEVENT_SIZE_CHANGED:
+        std::cout << "Window " << window_event.windowID << " event: ";
+        std::cout << "size changed";
+        std::cout << '\n';
+        break;
+    case SDL_WINDOWEVENT_MINIMIZED:
+        std::cout << "Window " << window_event.windowID << " event: ";
+        std::cout << "minimized";
+        std::cout << '\n';
+        break;
+    case SDL_WINDOWEVENT_MAXIMIZED:
+        std::cout << "Window " << window_event.windowID << " event: ";
+        std::cout << "maximized";
+        std::cout << '\n';
+        break;
+    case SDL_WINDOWEVENT_RESTORED:
+        std::cout << "Window " << window_event.windowID << " event: ";
+        std::cout << "restored";
+        std::cout << '\n';
+        break;
+    case SDL_WINDOWEVENT_ENTER:
+        std::cout << "Window " << window_event.windowID << " event: ";
+        std::cout << "enter";
+        std::cout << '\n';
+        break;
+    case SDL_WINDOWEVENT_LEAVE:
+        std::cout << "Window " << window_event.windowID << " event: ";
+        std::cout << "leave";
+        std::cout << '\n';
+        break;
+    case SDL_WINDOWEVENT_FOCUS_GAINED:
+        std::cout << "Window " << window_event.windowID << " event: ";
+        std::cout << "focuse gained";
+        std::cout << '\n';
+        break;
+    case SDL_WINDOWEVENT_FOCUS_LOST:
+        std::cout << "Window " << window_event.windowID << " event: ";
+        std::cout << "focus lost";
+        std::cout << '\n';
+        break;
+    case SDL_WINDOWEVENT_CLOSE:
+        std::cout << "Window " << window_event.windowID << " event: ";
+        std::cout << "close";
+        std::cout << '\n';
+        break;
+#if SDL_VERSION_ATLEAST(2, 0, 5)
+    case SDL_WINDOWEVENT_TAKE_FOCUS:
+        std::cout << "Window " << window_event.windowID << " event: ";
+        std::cout << "take focus";
+        std::cout << '\n';
+        break;
+    case SDL_WINDOWEVENT_HIT_TEST:
+        std::cout << "Window " << window_event.windowID << " event: ";
+        std::cout << "hit test";
+        std::cout << '\n';
+        break;
+#endif
+    default:
+        break;
+    }
+}
+
+void handle_quit_event(SDL_Event *event)
+{
+
+}
+
+int window_event_callback(void *userdata, SDL_Event *event)
+{
+    handle_window_event(event);
+    return 1;
+}
+
 int main(int argc, char* argv[])
 {
     sdl::Application application{SDL_INIT_VIDEO};
     sdl::image::Extensions extensions{IMG_INIT_PNG};
+
+    sdl::set_event_filter(window_event_callback, nullptr);
 
     constexpr sdl::Rectangle<int> screen_region{0, 0, 640, 480};
     constexpr int max_frame_rate_per_second = 100;
@@ -103,9 +207,6 @@ int main(int argc, char* argv[])
                 break;
             case SDL_WINDOWEVENT_SIZE_CHANGED:
                 renderer.present();
-                break;
-            case SDL_WINDOWEVENT_ENTER:
-                std::cout << "mouse enter\n";
                 break;
             default:
                 break;
