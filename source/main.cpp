@@ -170,8 +170,11 @@ int window_event_callback(void *userdata, SDL_Event *event)
 
 int main(int argc, char* argv[])
 {
-    sdl::Application application{SDL_INIT_VIDEO};
-    sdl::image::Extensions extensions{IMG_INIT_PNG};
+    sdl::initialize(SDL_INIT_VIDEO);
+    const auto cleanup = gsl::final_action([]() { sdl::quit(); });
+
+    sdl::image::initialize(IMG_INIT_PNG);
+    const auto image_cleanup = gsl::final_action([]() { sdl::image::quit(); });
 
     sdl::set_event_filter(window_event_callback, nullptr);
 

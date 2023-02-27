@@ -16,10 +16,10 @@
 
 namespace sdl {
 
-using EventFilterCallback = int (*)(void *userdata, SDL_Event *event);
+using EventFilterCallback = int (*)(void* userdata, SDL_Event* event);
 
-void add_event_watch(EventFilterCallback callback, void *user_data) noexcept;
-void set_event_filter(EventFilterCallback callback, void *user_data) noexcept;
+void add_event_watch(EventFilterCallback callback, void* user_data) noexcept;
+void set_event_filter(EventFilterCallback callback, void* user_data) noexcept;
 
 template <typename T>
 struct select_point;
@@ -133,6 +133,38 @@ class texture_from_surface final : virtual public generic_error
 };
 
 } // namespace exception
+
+inline void initialize(Uint32 flags)
+{
+    if (SDL_Init(flags) < 0) {
+        throw sdl::exception::init{};
+    }
+}
+
+inline void quit()
+{
+    SDL_Quit();
+}
+
+class Application
+{
+  public:
+    [[nodiscard]] Application(Uint32 flags)
+    {
+        initialize(flags);
+    }
+
+    [[nodiscard]] Application(const Application& other) = delete;
+    Application operator=(const Application& other) = delete;
+
+    [[nodiscard]] Application(Application&& other) noexcept = delete;
+    Application operator=(Application&& other) noexcept = delete;
+
+    ~Application() noexcept
+    {
+        quit();
+    }
+};
 
 struct WindowDeleter
 {
@@ -313,28 +345,6 @@ class Window
 
   private:
     WindowUniquePtr window_;
-};
-
-class Application
-{
-  public:
-    [[nodiscard]] Application(Uint32 flags)
-    {
-        if (SDL_Init(flags) < 0) {
-            throw exception::init{};
-        }
-    }
-
-    [[nodiscard]] Application(const Application& other) = delete;
-    Application operator=(const Application& other) = delete;
-
-    [[nodiscard]] Application(Application&& other) noexcept = delete;
-    Application operator=(Application&& other) noexcept = delete;
-
-    ~Application() noexcept
-    {
-        SDL_Quit();
-    }
 };
 
 } // namespace sdl

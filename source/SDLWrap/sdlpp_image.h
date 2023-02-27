@@ -43,31 +43,36 @@ class load_image : virtual public std::runtime_error
 
 } // namespace exception
 
-class Extensions
+inline void initialize(int flags)
+{
+    if ((IMG_Init(flags) & flags) == 0) {
+        throw exception::initialize_extension{};
+    }
+}
+
+inline void quit()
+{
+    IMG_Quit();
+}
+
+class Context
 {
   public:
-    Extensions() = default;
-    Extensions(int flags)
+    Context() = default;
+    Context(int flags)
     {
-        load(flags);
+        initialize(flags);
     }
 
-    Extensions(const Extensions&) = delete;
-    Extensions& operator=(const Extensions&) = delete;
+    Context(const Context&) = delete;
+    Context& operator=(const Context&) = delete;
 
-    Extensions(Extensions&&) = delete;
-    Extensions& operator=(Extensions&&) = delete;
+    Context(Context&&) = delete;
+    Context& operator=(Context&&) = delete;
 
-    ~Extensions()
+    ~Context()
     {
-        IMG_Quit();
-    }
-
-    void load(int flags)
-    {
-        if ((IMG_Init(flags) & flags) == 0) {
-            throw exception::initialize_extension{};
-        }
+        quit();
     }
 };
 
