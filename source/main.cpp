@@ -136,8 +136,12 @@ int main(int argc, char* argv[])
         renderer.present();
 
         minimum_frame_delay.end_interval();
-        const auto frame_duration = minimum_frame_delay.previous_interval_duration();
-        std::cout << to_milliseconds(frame_duration) << " ms\n";
+
+        constexpr bool log_frame_duration = false;
+        if (log_frame_duration) {
+            const auto frame_duration = minimum_frame_delay.previous_interval_duration();
+            std::cout << to_milliseconds(frame_duration) << " ms\n";
+        }
     }
 
     return 0;
