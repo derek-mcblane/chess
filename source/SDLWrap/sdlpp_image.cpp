@@ -2,6 +2,9 @@
 
 #include "sdlpp.h"
 
+#include <string>
+#include <string_view>
+
 namespace sdl::image {
 
 [[nodiscard]] SurfaceUniquePtr load_image(const std::string& filename)

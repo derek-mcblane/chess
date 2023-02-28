@@ -43,11 +43,26 @@ class load_image : virtual public std::runtime_error
 
 } // namespace exception
 
+enum class InitFlags
+{
+    jpg = 0x00000001U,
+    png = 0x00000002U,
+    tif = 0x00000004U,
+    webp = 0x00000008U,
+    jxl = 0x00000010U,
+    avif = 0x00000020U,
+};
+
 inline void initialize(int flags)
 {
     if ((IMG_Init(flags) & flags) == 0) {
         throw exception::initialize_extension{};
     }
+}
+
+inline void initialize(InitFlags flags)
+{
+    initialize(static_cast<int>(flags));
 }
 
 inline void quit()
@@ -58,8 +73,12 @@ inline void quit()
 class Context
 {
   public:
-    Context() = default;
     Context(int flags)
+    {
+        initialize(flags);
+    }
+
+    Context(InitFlags flags)
     {
         initialize(flags);
     }

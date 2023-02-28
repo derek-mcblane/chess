@@ -134,6 +134,21 @@ class texture_from_surface final : virtual public generic_error
 
 } // namespace exception
 
+
+enum class InitFlags : Uint32
+{
+    Timer = 0x00000001U,
+    Audio = 0x00000010U,
+    Video = 0x00000020U,
+    Joystick = 0x00000200U,
+    Haptic = 0x00001000U,
+    GameController = 0x00002000U,
+    Events = 0x00004000U,
+    Sensor = 0x00008000U,
+    NoParachute = 0x00100000U,
+    Everything = Timer | Audio | Video | Joystick | Haptic | GameController | Events | Sensor | NoParachute,
+};
+
 inline void initialize(Uint32 flags)
 {
     if (SDL_Init(flags) < 0) {
@@ -141,26 +156,36 @@ inline void initialize(Uint32 flags)
     }
 }
 
+inline void initialize(InitFlags flags)
+{
+    initialize(static_cast<Uint32>(flags));
+}
+
 inline void quit()
 {
     SDL_Quit();
 }
 
-class Application
+class Context
 {
   public:
-    [[nodiscard]] Application(Uint32 flags)
+    [[nodiscard]] Context(Uint32 flags)
     {
         initialize(flags);
     }
 
-    [[nodiscard]] Application(const Application& other) = delete;
-    Application operator=(const Application& other) = delete;
+    [[nodiscard]] Context(InitFlags flags)
+    {
+        initialize(flags);
+    }
 
-    [[nodiscard]] Application(Application&& other) noexcept = delete;
-    Application operator=(Application&& other) noexcept = delete;
+    [[nodiscard]] Context(const Context& other) = delete;
+    Context operator=(const Context& other) = delete;
 
-    ~Application() noexcept
+    [[nodiscard]] Context(Context&& other) noexcept = delete;
+    Context operator=(Context&& other) noexcept = delete;
+
+    ~Context() noexcept
     {
         quit();
     }

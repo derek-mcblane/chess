@@ -157,96 +157,105 @@ void handle_window_event(const SDL_Event* event)
     }
 }
 
-void handle_quit_event(SDL_Event *event)
-{
+void handle_quit_event(SDL_Event* event) {}
 
-}
-
-int window_event_callback(void *userdata, SDL_Event *event)
+int window_event_callback(void* userdata, SDL_Event* event)
 {
     handle_window_event(event);
     return 1;
 }
 
-int main(int argc, char* argv[])
+class Application
 {
-    sdl::initialize(SDL_INIT_VIDEO);
-    const auto cleanup = gsl::final_action([]() { sdl::quit(); });
+  public:
+    Application()
+    {
+        while (running_) {
+            handle_events();
+            update();
+        }
+    }
 
-    sdl::image::initialize(IMG_INIT_PNG);
-    const auto image_cleanup = gsl::final_action([]() { sdl::image::quit(); });
-
-    sdl::set_event_filter(window_event_callback, nullptr);
-
-    constexpr sdl::Rectangle<int> screen_region{0, 0, 640, 480};
-    constexpr int max_frame_rate_per_second = 100;
-    constexpr auto min_frame_period_ms = std::chrono::milliseconds(1'000) / max_frame_rate_per_second;
-
-    constexpr auto window_config = sdl::WindowConfig{.title = "SDL Application",
-                                                     .x_position = SDL_WINDOWPOS_UNDEFINED,
-                                                     .y_position = SDL_WINDOWPOS_UNDEFINED,
-                                                     .width = screen_region.w,
-                                                     .height = screen_region.h,
-                                                     .flags = SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE};
-
-    constexpr auto renderer_config =
-        sdl::RendererConfig{.index = -1, .flags = SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC};
-
-    auto window = sdl::Window{window_config};
-    auto renderer = sdl::Renderer{window.get_pointer(), renderer_config};
-
-    auto piece_sprites = sdl::Texture{
-        renderer.make_texture_from_surface(sdl::image::load_image("resources/pieces_sprite_map.png").get())};
-    SpriteMapGrid piece_sprites_grid{piece_sprites.size(), {n_pieces, n_colors}};
-
-    bool running{true};
-    MinimumPeriodWait minimum_frame_delay{std::chrono::milliseconds{min_frame_period_ms}};
-    while (running) {
+    void handle_events()
+    {
         SDL_Event event;
         while (SDL_PollEvent(&event) != 0) {
             switch (event.type) {
             case SDL_QUIT:
-                running = false;
+                running_ = false;
                 break;
             case SDL_WINDOWEVENT_SIZE_CHANGED:
-                renderer.present();
+                renderer_.present();
                 break;
             default:
                 break;
             }
         }
+    }
 
-        renderer.set_draw_color(sdl::pallete::white);
-        renderer.clear();
+    void update()
+    {
+        renderer_.set_draw_color(sdl::pallete::white);
+        renderer_.clear();
 
         constexpr int board_size = 8;
-        const auto window_size = window.size();
+        const auto window_size = window_.size();
         const auto min_dim = std::min(window_size.x, window_size.y);
         const int square_size = min_dim / board_size;
         auto rectangle = sdl::Rectangle<int>{0, 0, square_size, square_size};
         for (int row = 0; row < board_size; ++row) {
             for (int col = 0; col < board_size; ++col) {
-                renderer.set_draw_color(((row + col) % 2 == 0) ? sdl::pallete::white : sdl::pallete::blue);
+                renderer_.set_draw_color(((row + col) % 2 == 0) ? sdl::pallete::white : sdl::pallete::blue);
                 rectangle.x = row * square_size;
                 rectangle.y = col * square_size;
-                renderer.fill_rectangle(rectangle);
+                renderer_.fill_rectangle(rectangle);
             }
         }
 
-        const auto pieces_sprites_rect = piece_sprites_grid.get_region({3, 1});
+        const auto pieces_sprites_rect = piece_sprites_grid_.get_region({3, 1});
         constexpr auto screen_rect = sdl::Rectangle<int>{0, 0, 200, 200};
-        renderer.copy<int>(piece_sprites, pieces_sprites_rect, screen_rect);
+        renderer_.copy<int>(piece_sprites_, pieces_sprites_rect, screen_rect);
 
-        renderer.present();
+        renderer_.present();
 
-        minimum_frame_delay.end_interval();
+        minimum_frame_delay_.end_interval();
 
         constexpr bool log_frame_duration = false;
         if (log_frame_duration) {
-            const auto frame_duration = minimum_frame_delay.previous_interval_duration();
+            const auto frame_duration = minimum_frame_delay_.previous_interval_duration();
             std::cout << to_milliseconds(frame_duration) << " ms\n";
         }
     }
 
+  private:
+    static constexpr sdl::Rectangle<int> screen_region{0, 0, 640, 480};
+    static constexpr int max_frame_rate_per_second = 100;
+    static constexpr auto min_frame_period_ms = std::chrono::milliseconds(1'000) / max_frame_rate_per_second;
+    static constexpr auto window_config = sdl::WindowConfig{.title = "SDL Application",
+                                                            .x_position = SDL_WINDOWPOS_UNDEFINED,
+                                                            .y_position = SDL_WINDOWPOS_UNDEFINED,
+                                                            .width = screen_region.w,
+                                                            .height = screen_region.h,
+                                                            .flags = SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE};
+    static constexpr auto renderer_config =
+        sdl::RendererConfig{.index = -1, .flags = SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC};
+
+    std::atomic_bool running_{true};
+    MinimumPeriodWait<std::chrono::milliseconds> minimum_frame_delay_{std::chrono::milliseconds{min_frame_period_ms}};
+
+    sdl::Window window_{window_config};
+    sdl::Renderer renderer_{window_.get_pointer(), renderer_config};
+
+    sdl::Texture piece_sprites_{sdl::Texture{
+        renderer_.make_texture_from_surface(sdl::image::load_image("resources/pieces_sprite_map.png").get())}};
+    SpriteMapGrid piece_sprites_grid_{piece_sprites_.size(), {n_pieces, n_colors}};
+};
+
+int main(int argc, char* argv[])
+{
+    using namespace sdl;
+    Context global_setup{InitFlags::Video};
+    image::Context global_image_setup{image::InitFlags::png};
+    Application app;
     return 0;
 }
