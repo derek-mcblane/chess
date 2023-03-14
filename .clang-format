@@ -9,6 +9,7 @@ AlwaysBreakTemplateDeclarations: Yes
 DerivePointerAlignment: false
 PointerAlignment: Left
 ReferenceAlignment: Pointer
+PackConstructorInitializers: NextLine
 
 BreakBeforeBraces: Custom
 BraceWrapping:
