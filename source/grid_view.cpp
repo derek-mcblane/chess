@@ -38,14 +38,22 @@ void GridView::clear_on_cell_clicked_callback()
 
 void GridView::on_button_down(const SDL_MouseButtonEvent& event)
 {
-    down_index_ = grid_index({event.x, event.y});
     selected_index_.reset();
+
+    Point clicked_index{grid_index({event.x, event.y})};
+    if (clicked_index.x < 0 || clicked_index.x >= grid_size.x) {
+        return;
+    }
+    if (clicked_index.y < 0 || clicked_index.y >= grid_size.y) {
+        return;
+    }
+    down_index_ = clicked_index;
 }
 
 void GridView::on_button_up(const SDL_MouseButtonEvent& event)
 {
     const Point up_index = grid_index({event.x, event.y});
-    if (sdl::point_equals(up_index, down_index_)) {
+    if (sdl::point_equals(up_index, down_index_.load())) {
         selected_index_ = up_index;
         if (on_cell_clicked_) {
             (*on_cell_clicked_)(up_index);

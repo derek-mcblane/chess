@@ -1,5 +1,6 @@
 #include "sdlpp.h"
 
+#include <atomic>
 #include <functional>
 
 class GridView
@@ -27,7 +28,7 @@ class GridView
     void on_button_up(const SDL_MouseButtonEvent& event);
 
   private:
-    Point down_index_;
+    std::atomic<Point> down_index_;
     std::optional<std::atomic<Point>> selected_index_;
     std::optional<OnClickedCallback> on_cell_clicked_;
 };
