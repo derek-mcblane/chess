@@ -20,7 +20,7 @@ enum class Piece
 
 class Board
 {
-    using Position = dm::Vec2<int>;
+    using Position = dm::Coord<int>;
 
   public:
     std::vector<Position> valid_moves(Position position);

@@ -17,7 +17,11 @@ class Vec2
   public:
     using dimension_type = T;
 
-    std::array<T, 2> elements_; // only public for aggregate-initialization
+    Vec2(T x, T y) : elements_{x, y} {}
+    Vec2(std::initializer_list<T> list)
+    {
+        std::copy(list.begin(), list.end(), elements_.begin());
+    }
 
     [[nodiscard]] static constexpr Vec2<T> unit_x() noexcept
     {
@@ -64,14 +68,12 @@ class Vec2
         return {-value.x(), -value.y()};
     }
 
-    [[nodiscard]] friend constexpr Vec2<T> operator-(const Vec2<T>& lhs,
-                                                     const Vec2<T>& rhs) noexcept
+    [[nodiscard]] friend constexpr Vec2<T> operator-(const Vec2<T>& lhs, const Vec2<T>& rhs) noexcept
     {
         return {lhs.x() - rhs.x(), lhs.y() - rhs.y()};
     }
 
-    [[nodiscard]] friend constexpr Vec2<T> operator+(const Vec2<T>& lhs,
-                                                     const Vec2<T>& rhs) noexcept
+    [[nodiscard]] friend constexpr Vec2<T> operator+(const Vec2<T>& lhs, const Vec2<T>& rhs) noexcept
     {
         return {lhs.x() + rhs.x(), lhs.y() + rhs.y()};
     }
@@ -163,8 +165,7 @@ class Vec2
         return !(lhs < rhs);
     }
 
-    [[nodiscard]] static constexpr T distance_squared(const Vec2<T>& lhs,
-                                                      const Vec2<T>& rhs) noexcept
+    [[nodiscard]] static constexpr T distance_squared(const Vec2<T>& lhs, const Vec2<T>& rhs) noexcept
     {
         Vec2<T> delta = abs_difference(lhs, rhs);
         return delta.x() * delta.x() + delta.y() * delta.y();
@@ -175,15 +176,13 @@ class Vec2
         return std::sqrt(distance_squared(lhs, rhs));
     }
 
-    [[nodiscard]] static constexpr T chebyshev_distance(const Vec2<T>& lhs,
-                                                        const Vec2<T>& rhs) noexcept
+    [[nodiscard]] static constexpr T chebyshev_distance(const Vec2<T>& lhs, const Vec2<T>& rhs) noexcept
     {
         Vec2<T> delta = abs_difference(lhs, rhs);
         return std::max(delta.x(), delta.y());
     }
 
-    [[nodiscard]] static constexpr T manhattan_distance(const Vec2<T>& lhs,
-                                                        const Vec2<T>& rhs) noexcept
+    [[nodiscard]] static constexpr T manhattan_distance(const Vec2<T>& lhs, const Vec2<T>& rhs) noexcept
     {
         Vec2<T> delta = abs_difference(lhs, rhs);
         return delta.x() + delta.y();
@@ -198,6 +197,8 @@ class Vec2
     static constexpr std::size_t x_axis = 0;
     static constexpr std::size_t y_axis = 1;
 
+    std::array<T, 2> elements_;
+
     [[nodiscard]] static constexpr T abs_difference(T lhs, T rhs) noexcept
     {
         if constexpr (std::is_signed_v<T>) {
@@ -207,20 +208,17 @@ class Vec2
         }
     }
 
-    [[nodiscard]] static constexpr T abs_difference_x(const Vec2<T>& lhs,
-                                                      const Vec2<T>& rhs) noexcept
+    [[nodiscard]] static constexpr T abs_difference_x(const Vec2<T>& lhs, const Vec2<T>& rhs) noexcept
     {
         return abs_difference(lhs.x(), rhs.x());
     }
 
-    [[nodiscard]] static constexpr T abs_difference_y(const Vec2<T>& lhs,
-                                                      const Vec2<T>& rhs) noexcept
+    [[nodiscard]] static constexpr T abs_difference_y(const Vec2<T>& lhs, const Vec2<T>& rhs) noexcept
     {
         return abs_difference(lhs.y(), rhs.y());
     }
 
-    [[nodiscard]] static constexpr Vec2<T> abs_difference(const Vec2<T>& lhs,
-                                                          const Vec2<T>& rhs) noexcept
+    [[nodiscard]] static constexpr Vec2<T> abs_difference(const Vec2<T>& lhs, const Vec2<T>& rhs) noexcept
     {
         return {abs_difference(lhs.x(), rhs.x()), abs_difference(lhs.y(), rhs.y())};
     }
@@ -241,7 +239,6 @@ class Coord : public Vec2<T>
     }
 
     using Vec2<T>::Vec2;
-
     constexpr Coord(const Vec2<T>& other) : Vec2<T>{other} {}
     constexpr Coord(Vec2<T>&& other) : Vec2<T>{std::move(other)} {}
     constexpr Coord& operator=(const Vec2<T>& other)
@@ -313,56 +310,43 @@ class Size : public Vec2<T>
 };
 
 template <typename Vec2Container>
-[[nodiscard]] std::optional<typename Vec2Container::value_type::dimension_type>
-min_x(const Vec2Container& vec2s)
+[[nodiscard]] std::optional<typename Vec2Container::value_type::dimension_type> min_x(const Vec2Container& vec2s)
 {
     if (vec2s.size() == 0) {
         return {};
     }
-    return std::min_element(vec2s.cbegin(), vec2s.cend(),
-                            [](auto lhs, auto rhs) { return lhs.x() < rhs.x(); })
-        ->x();
+    return std::min_element(vec2s.cbegin(), vec2s.cend(), [](auto lhs, auto rhs) { return lhs.x() < rhs.x(); })->x();
 }
 
 template <typename Vec2Container>
-[[nodiscard]] std::optional<typename Vec2Container::value_type::dimension_type>
-max_x(const Vec2Container& vec2s)
+[[nodiscard]] std::optional<typename Vec2Container::value_type::dimension_type> max_x(const Vec2Container& vec2s)
 {
     if (vec2s.size() == 0) {
         return {};
     }
-    return std::max_element(vec2s.cbegin(), vec2s.cend(),
-                            [](auto lhs, auto rhs) { return lhs.x() < rhs.x(); })
-        ->x();
+    return std::max_element(vec2s.cbegin(), vec2s.cend(), [](auto lhs, auto rhs) { return lhs.x() < rhs.x(); })->x();
 }
 
 template <typename Vec2Container>
-[[nodiscard]] std::optional<typename Vec2Container::value_type::dimension_type>
-min_y(const Vec2Container& vec2s)
+[[nodiscard]] std::optional<typename Vec2Container::value_type::dimension_type> min_y(const Vec2Container& vec2s)
 {
     if (vec2s.size() == 0) {
         return {};
     }
-    return std::min_element(vec2s.cbegin(), vec2s.cend(),
-                            [](auto lhs, auto rhs) { return lhs.y() < rhs.y(); })
-        ->y();
+    return std::min_element(vec2s.cbegin(), vec2s.cend(), [](auto lhs, auto rhs) { return lhs.y() < rhs.y(); })->y();
 }
 
 template <typename Vec2Container>
-[[nodiscard]] std::optional<typename Vec2Container::value_type::dimension_type>
-max_y(const Vec2Container& vec2s)
+[[nodiscard]] std::optional<typename Vec2Container::value_type::dimension_type> max_y(const Vec2Container& vec2s)
 {
     if (vec2s.size() == 0) {
         return {};
     }
-    return std::max_element(vec2s.cbegin(), vec2s.cend(),
-                            [](auto lhs, auto rhs) { return lhs.y() < rhs.y(); })
-        ->y();
+    return std::max_element(vec2s.cbegin(), vec2s.cend(), [](auto lhs, auto rhs) { return lhs.y() < rhs.y(); })->y();
 }
 
 template <typename Vec2Container>
-[[nodiscard]] std::optional<typename Vec2Container::value_type>
-min_extent(const Vec2Container& vec2s)
+[[nodiscard]] std::optional<typename Vec2Container::value_type> min_extent(const Vec2Container& vec2s)
 {
     if (vec2s.size() == 0) {
         return {};
@@ -371,8 +355,7 @@ min_extent(const Vec2Container& vec2s)
 }
 
 template <typename Vec2Container>
-[[nodiscard]] std::optional<typename Vec2Container::value_type>
-max_extent(const Vec2Container& vec2s)
+[[nodiscard]] std::optional<typename Vec2Container::value_type> max_extent(const Vec2Container& vec2s)
 {
     if (vec2s.size() == 0) {
         return {};
@@ -381,8 +364,7 @@ max_extent(const Vec2Container& vec2s)
 }
 
 template <typename Vec2Container>
-[[nodiscard]] std::optional<
-    std::pair<typename Vec2Container::value_type, typename Vec2Container::value_type>>
+[[nodiscard]] std::optional<std::pair<typename Vec2Container::value_type, typename Vec2Container::value_type>>
 extents(const Vec2Container& vec2s)
 {
     if (vec2s.size() == 0) {

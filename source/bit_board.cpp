@@ -107,11 +107,12 @@ BitBoard BitBoard::shift<downright>(const size_t& n) const
 std::vector<BitBoard::Position> BitBoard::to_positions() const
 {
     std::vector<Position> positions;
-    for (size_t row = 0; row < board_size; row++) {
-        for (size_t col = 0; col < board_size; col++) {
-            Position p{row, col};
-            if (position_mask(p) & bits_)
-                positions.push_back(p);
+    for (int row = 0; row < board_size; row++) {
+        for (int column = 0; column < board_size; column++) {
+            Position position{row, column};
+            if ((position_mask(position) & bits_) != 0U) {
+                positions.push_back(position);
+            }
         }
     }
     return positions;

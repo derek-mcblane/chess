@@ -1,20 +1,120 @@
 #include "sdlpp.h"
 
+#include <optional>
+
 namespace sdl {
 
-void add_event_watch(EventFilterCallback callback, void *user_data) noexcept
+void add_event_watch(EventFilterCallback callback, void* user_data) noexcept
 {
     SDL_AddEventWatch(callback, user_data);
 }
 
-void set_event_filter(EventFilterCallback callback, void *user_data) noexcept
+void set_event_filter(EventFilterCallback callback, void* user_data) noexcept
 {
     SDL_SetEventFilter(callback, user_data);
 }
 
-bool get_event_filter(EventFilterCallback* callback, void **user_data) noexcept
+bool get_event_filter(EventFilterCallback* callback, void** user_data) noexcept
 {
     return static_cast<bool>(SDL_GetEventFilter(callback, user_data));
+}
+
+bool get_event_filter(EventFilterCallback& callback, void*& user_data) noexcept
+{
+    return static_cast<bool>(SDL_GetEventFilter(&callback, &user_data));
+}
+
+void pump_events() noexcept
+{
+    SDL_PumpEvents();
+}
+
+void flush_events(EventType min_event, EventType max_event) noexcept
+{
+    SDL_FlushEvents(min_event, max_event);
+}
+
+void flush_all_events() noexcept
+{
+    SDL_FlushEvents(SDL_FIRSTEVENT, SDL_LASTEVENT);
+}
+
+bool poll_event(Event* event) noexcept
+{
+    return SDL_PollEvent(event) != 0;
+}
+
+bool poll_event(Event& event) noexcept
+{
+    return SDL_PollEvent(&event) != 0;
+}
+
+std::optional<Event> poll_event() noexcept
+{
+    Event event;
+    if (SDL_PollEvent(&event) == 0) {
+        return std::nullopt;
+    }
+    return event;
+}
+
+void wait_event(Event* event)
+{
+    if (SDL_WaitEvent(event) != 0) {
+        throw exception::generic_error{};
+    }
+}
+
+void wait_event(Event& event)
+{
+    return wait_event(&event);
+}
+
+Event wait_event()
+{
+    Event event;
+    wait_event(event);
+    return event;
+}
+
+void wait_event(Event* event, int timeout)
+{
+    if (SDL_WaitEventTimeout(event, timeout) != 0) {
+        throw exception::generic_error{};
+    }
+}
+
+void wait_event(Event& event, int timeout)
+{
+    wait_event(&event, timeout);
+}
+
+Event wait_event(int timeout)
+{
+    Event event;
+    wait_event(event);
+    return event;
+}
+
+Uint32 register_events(int n_events)
+{
+    if (n_events <= 0) {
+        throw exception::generic_error{};
+    }
+    Uint32 event_id = SDL_RegisterEvents(n_events);
+    if (event_id == UINT32_MAX) {
+        throw exception::generic_error{};
+    }
+    return event_id;
+}
+
+bool push_event(SDL_Event& event)
+{
+    int status = SDL_PushEvent(&event);
+    if (status < 0) {
+        throw exception::generic_error{};
+    }
+    return status == 1;
 }
 
 [[nodiscard]] WindowUniquePtr make_window(const char* title, int x_position, int y_position, int width, int height,
@@ -22,7 +122,7 @@ bool get_event_filter(EventFilterCallback* callback, void **user_data) noexcept
 {
     WindowUniquePtr window{SDL_CreateWindow(title, x_position, y_position, width, height, flags)};
     if (window == nullptr) {
-        throw sdl::exception::create_window{};
+        throw exception::create_window{};
     }
     return window;
 }
@@ -36,7 +136,7 @@ bool get_event_filter(EventFilterCallback* callback, void **user_data) noexcept
 {
     RendererUniquePtr renderer{SDL_CreateRenderer(window, index, flags)};
     if (renderer == nullptr) {
-        throw sdl::exception::create_renderer{};
+        throw exception::create_renderer{};
     }
     return renderer;
 }
@@ -50,7 +150,7 @@ bool get_event_filter(EventFilterCallback* callback, void **user_data) noexcept
 {
     TextureUniquePtr texture{SDL_CreateTextureFromSurface(renderer, surface)};
     if (texture == nullptr) {
-        throw sdl::exception::texture_from_surface{};
+        throw exception::texture_from_surface{};
     }
     return texture;
 }
@@ -64,7 +164,7 @@ bool get_event_filter(EventFilterCallback* callback, void **user_data) noexcept
 {
     SurfaceUniquePtr image{SDL_LoadBMP(filename.c_str())};
     if (image == nullptr) {
-        throw sdl::exception::load_image{};
+        throw exception::load_image{};
     }
     return image;
 }
@@ -73,9 +173,21 @@ bool get_event_filter(EventFilterCallback* callback, void **user_data) noexcept
 {
     SurfaceUniquePtr converted_surface{SDL_ConvertSurface(surface.get(), format, flags)};
     if (converted_surface == nullptr) {
-        throw sdl::exception::convert_surface{};
+        throw exception::convert_surface{};
     }
     return converted_surface;
+}
+
+void Renderer::draw_line(int x_begin, int y_begin, int x_end, int y_end) const
+{
+    if (SDL_RenderDrawLine(get(), x_begin, y_begin, x_end, y_end) != 0) {
+        throw exception::generic_error{};
+    }
+}
+
+void Renderer::draw_line(Point<int> begin, Point<int> end) const
+{
+    draw_line(begin.x, begin.y, end.x, end.y);
 }
 
 template <>

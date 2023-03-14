@@ -1,4 +1,5 @@
 find_package(Boost REQUIRED COMPONENTS headers)
+find_package(spdlog REQUIRED)
 find_package(Microsoft.GSL CONFIG REQUIRED)
 find_package(Eigen3 CONFIG REQUIRED)
 find_package(SDL2 REQUIRED COMPONENTS SDL2)
@@ -6,9 +7,10 @@ find_package(SDL2_image REQUIRED COMPONENTS SDL2_image)
 
 add_subdirectory(SDLWrap)
 
-add_executable(SDLApp main.cpp board.cpp)
+add_executable(SDLApp main.cpp bit_board.cpp pieces.cpp grid_view.cpp)
 target_link_libraries(SDLApp PRIVATE Boost::headers)
 target_link_libraries(SDLApp PRIVATE Microsoft.GSL::GSL)
+target_link_libraries(SDLApp PRIVATE spdlog::spdlog) 
 target_link_libraries(SDLApp PRIVATE Eigen3::Eigen)
 target_link_libraries(SDLApp PRIVATE SDL2::SDL2)
 target_link_libraries(SDLApp PRIVATE SDL2_image::SDL2_image)

@@ -16,10 +16,26 @@
 
 namespace sdl {
 
-using EventFilterCallback = int (*)(void* userdata, SDL_Event* event);
+using Event = SDL_Event;
+using EventType = SDL_EventType;
+using EventFilterCallback = int (*)(void* userdata, Event* event);
 
 void add_event_watch(EventFilterCallback callback, void* user_data) noexcept;
 void set_event_filter(EventFilterCallback callback, void* user_data) noexcept;
+bool get_event_filter(EventFilterCallback* callback, void** user_data) noexcept;
+bool get_event_filter(EventFilterCallback& callback, void*& user_data) noexcept;
+void pump_events() noexcept;
+void flush_events(EventType min_event, EventType max_event) noexcept;
+void flush_all_events() noexcept;
+bool poll_event(Event* event) noexcept;
+bool poll_event(Event& event) noexcept;
+std::optional<Event> poll_event() noexcept;
+void wait_event(Event* event);
+void wait_event(Event& event);
+Event wait_event();
+void wait_event(Event* event, int timeout);
+void wait_event(Event& event, int timeout);
+Event wait_event(int timeout);
 
 template <typename T>
 struct select_point;
@@ -39,23 +55,46 @@ struct select_point<float>
 template <typename T>
 using Point = typename select_point<T>::type;
 
+template <typename Point>
+bool point_equals(Point lhs, Point rhs) {
+    return lhs.x == rhs.x && lhs.y == rhs.y;
+}
+
 template <typename T>
-struct select_rect;
+struct select_rectangle;
 
 template <>
-struct select_rect<int>
+struct select_rectangle<int>
 {
     using type = SDL_Rect;
 };
 
 template <>
-struct select_rect<float>
+struct select_rectangle<float>
 {
     using type = SDL_FRect;
 };
 
 template <typename T>
-using Rectangle = typename select_rect<T>::type;
+using Rectangle = typename select_rectangle<T>::type;
+
+template <typename Rectangle>
+struct rectangle_dimension;
+
+template <typename Rectangle>
+using rectangle_dimension_type = typename rectangle_dimension<Rectangle>::type;
+
+template <>
+struct rectangle_dimension<SDL_Rect>
+{
+    using type = int;
+};
+
+template <>
+struct rectangle_dimension<SDL_FRect>
+{
+    using type = float;
+};
 
 using Color = SDL_Color;
 
@@ -133,7 +172,6 @@ class texture_from_surface final : virtual public generic_error
 };
 
 } // namespace exception
-
 
 enum class InitFlags : Uint32
 {
@@ -329,9 +367,11 @@ class Renderer
         SDL_RenderPresent(get());
     }
 
+    void draw_line(int x_begin, int y_begin, int x_end, int y_end) const;
+    void draw_line(Point<int> begin, Point<int> end) const;
+
     template <typename Rectangle>
     void fill_rectangle(const Rectangle& rectangle);
-
     template <typename Rectangle>
     void fill_rectangles(std::span<Rectangle> rectangles);
 
@@ -362,11 +402,21 @@ class Window
         return window_.get();
     }
 
-    [[nodiscard]] Point<int> size() const noexcept
+    [[nodiscard]] std::tuple<int, int> size() const noexcept
     {
-        Point<int> size;
-        SDL_GetWindowSize(get_pointer(), &size.x, &size.y);
+        std::tuple<int, int> size;
+        SDL_GetWindowSize(get_pointer(), &std::get<0>(size), &std::get<1>(size));
         return size;
+    }
+
+    [[nodiscard]] bool shown() const noexcept
+    {
+        return (SDL_GetWindowFlags(get_pointer()) & SDL_WINDOW_SHOWN) != 0U;
+    }
+
+    [[nodiscard]] bool hidden() const noexcept
+    {
+        return (SDL_GetWindowFlags(get_pointer()) & SDL_WINDOW_HIDDEN) != 0U;
     }
 
   private:
