@@ -7,8 +7,6 @@
 #include <iostream>
 #include <type_traits>
 
-#include <boost/container_hash/hash.hpp>
-
 namespace dm {
 
 template <typename T>
@@ -374,17 +372,3 @@ extents(const Vec2Container& vec2s)
 }
 
 } // namespace dm
-
-namespace std {
-template <typename T>
-struct hash<dm::Vec2<T>>
-{
-    size_t operator()(const dm::Vec2<T>& value) const
-    {
-        size_t result = 0;
-        boost::hash_combine(result, value.x());
-        boost::hash_combine(result, value.y());
-        return result;
-    }
-};
-} // namespace std

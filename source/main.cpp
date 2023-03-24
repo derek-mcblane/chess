@@ -20,26 +20,47 @@
 #include <thread>
 
 using namespace chess;
+using Coord = dm::Coord<int>;
+using Point = sdl::Point<int>;
 
 template <>
 struct fmt::formatter<SDL_MouseButtonEvent> : fmt::formatter<std::string>
 {
     auto format(SDL_MouseButtonEvent event, format_context& ctx) -> decltype(ctx.out())
     {
-        return format_to(ctx.out(),
-                         "[SDL_MouseButtonEvent type={}, timestamp={}, windowID={}, which={}, button={}, state={}, "
-                         "clicks={}, padding1={}, x={}, y={}]",
-                         event.type, event.timestamp, event.windowID, event.which, event.button, event.state,
-                         event.clicks, event.padding1, event.x, event.y);
+        return format_to(
+            ctx.out(),
+            "[SDL_MouseButtonEvent"
+            "type={}, timestamp={}, windowID={}, which={}, button={}, state={}, clicks={}, padding1={}, x={}, y={}]",
+            event.type,
+            event.timestamp,
+            event.windowID,
+            event.which,
+            event.button,
+            event.state,
+            event.clicks,
+            event.padding1,
+            event.x,
+            event.y
+        );
     }
 };
 
 template <>
-struct fmt::formatter<sdl::Point<int>> : fmt::formatter<std::string>
+struct fmt::formatter<Point> : fmt::formatter<std::string>
 {
-    auto format(sdl::Point<int> point, format_context& ctx) -> decltype(ctx.out())
+    auto format(Point point, format_context& ctx) -> decltype(ctx.out())
     {
-        return format_to(ctx.out(), "[sdl::Point<int> x={}, y={}]", point.x, point.y);
+        return format_to(ctx.out(), "[Point x={}, y={}]", point.x, point.y);
+    }
+};
+
+template <>
+struct fmt::formatter<Coord> : fmt::formatter<std::string>
+{
+    auto format(Coord point, format_context& ctx) -> decltype(ctx.out())
+    {
+        return format_to(ctx.out(), "[Coord row={}, col={}]", point.row(), point.column());
     }
 };
 
@@ -51,14 +72,16 @@ struct fmt::formatter<chess::Piece> : fmt::formatter<std::string>
         if (piece == chess::null_piece) {
             return format_to(ctx.out(), "null_piece");
         }
-        return format_to(ctx.out(), "{} {}", chess::piece_color_names.at(piece.color), chess::piece_type_names.at(piece.type));
+        return format_to(
+            ctx.out(), "{} {}", chess::piece_color_names.at(piece.color), chess::piece_type_names.at(piece.type)
+        );
     }
 };
 
 template <typename Vec2>
 sdl::Point<typename Vec2::dimension_type> vec2_to_sdl_point(Vec2 coordinate)
 {
-    return {coordinate.x(), coordinate.y()};
+    return {.x = coordinate.x(), .y = coordinate.y()};
 }
 
 template <typename Rep, typename Period>
@@ -76,9 +99,9 @@ sdl::Point<sdl::rectangle_dimension_type<Rectangle>> rectangle_center(Rectangle 
 namespace pallete {
 
 constexpr sdl::Color black{0x00, 0x00, 0x00, 0xFF};
-constexpr sdl::Color tan{0x0F, 0x0F, 0x00, 0xFF};
 constexpr sdl::Color blue{0x00, 0x00, 0xFF, 0xFF};
 constexpr sdl::Color jasons_dumbass_blue{129, 152, 201, 0xFF};
+constexpr sdl::Color light_green{169, 216, 145, 0xFF};
 constexpr sdl::Color gray{0x0F, 0x0F, 0x0F, 0xFF};
 constexpr sdl::Color white{0xFF, 0xFF, 0xFF, 0xFF};
 
@@ -87,17 +110,15 @@ constexpr sdl::Color white{0xFF, 0xFF, 0xFF, 0xFF};
 class SpriteMapGrid
 {
   public:
-    SpriteMapGrid(sdl::Point<int> map_size, sdl::Point<int> n_elements)
-        : pitch_{map_size.x / n_elements.x, map_size.y / n_elements.y}
-    {}
+    SpriteMapGrid(Point map_size, Point n_elements) : pitch_{map_size.x / n_elements.x, map_size.y / n_elements.y} {}
 
-    [[nodiscard]] sdl::Rectangle<int> get_region(sdl::Point<int> coordinate) const;
+    [[nodiscard]] sdl::Rectangle<int> get_region(Point coordinate) const;
 
   private:
-    sdl::Point<int> pitch_;
+    Point pitch_;
 };
 
-sdl::Rectangle<int> SpriteMapGrid::get_region(sdl::Point<int> coordinate) const
+sdl::Rectangle<int> SpriteMapGrid::get_region(Point coordinate) const
 {
     return {.x = coordinate.x * pitch_.x, .y = coordinate.y * pitch_.y, .w = pitch_.x, .h = pitch_.y};
 }
@@ -106,9 +127,9 @@ template <typename T>
 class SpriteGrid
 {
   public:
-    using CoordinateMap = std::map<T, sdl::Point<int>>;
+    using CoordinateMap = std::map<T, Point>;
 
-    SpriteGrid(sdl::Point<int> texture_size, sdl::Point<int> grid_size, CoordinateMap&& sprite_coordinates)
+    SpriteGrid(Point texture_size, Point grid_size, CoordinateMap&& sprite_coordinates)
         : pitch_{texture_size.x / grid_size.x, texture_size.y / grid_size.y},
           coordinates_{std::move(sprite_coordinates)}
     {}
@@ -116,14 +137,14 @@ class SpriteGrid
     [[nodiscard]] sdl::Rectangle<int> get_region(const T& sprite);
 
   private:
-    sdl::Point<int> pitch_;
+    Point pitch_;
     CoordinateMap coordinates_;
 
-    [[nodiscard]] sdl::Rectangle<int> get_region(sdl::Point<int> coordinate) const;
+    [[nodiscard]] sdl::Rectangle<int> get_region(Point coordinate) const;
 };
 
 template <typename T>
-sdl::Rectangle<int> SpriteGrid<T>::get_region(sdl::Point<int> coordinate) const
+sdl::Rectangle<int> SpriteGrid<T>::get_region(Point coordinate) const
 {
     return {.x = coordinate.x * pitch_.x, .y = coordinate.y * pitch_.y, .w = pitch_.x, .h = pitch_.y};
 }
@@ -160,58 +181,42 @@ class ChessApplication
     ChessApplication()
     {
         initialize_event_handlers();
-        board_display_.set_on_cell_clicked_callback(
-            [this](const sdl::Point<int>& point) { on_grid_cell_clicked(point); });
+        board_display_.set_on_cell_clicked_callback([this](const Point& point) { on_grid_cell_clicked(point); });
         process_events();
     }
 
-    void on_grid_cell_clicked(const sdl::Point<int>& point)
+    void on_grid_cell_clicked(const Point& point)
     {
         spdlog::debug("clicked cell {}", point);
-        const auto lock = std::lock_guard{pieces_mutex_};
-        const auto coord = dm::Coord<int>{point.x, point.y};
+        const auto coord = Coord{point.x, point.y};
 
-        const auto current = pieces_.occupant_at(coord);
-        spdlog::debug("cell contains piece: {}", current);
-        PieceType next_type;
-        PieceColor next_color = PieceColor::white;
-        switch (current.type) {
-        case PieceType::pawn:
-            next_type = PieceType::knight;
-            break;
-        case PieceType::knight:
-            next_type = PieceType::bishop;
-            break;
-        case PieceType::bishop:
-            next_type = PieceType::rook;
-            break;
-        case PieceType::rook:
-            next_type = PieceType::queen;
-            break;
-        case PieceType::queen:
-            next_type = PieceType::king;
-            break;
-        case PieceType::king:
-            next_type = PieceType::none;
-            next_color = PieceColor::none;
-            break;
-        case PieceType::none:
-            next_type = PieceType::pawn;
-            break;
-        default:
-            assert(!"invalid piece");
-            break;
+        const auto lock = std::lock_guard{pieces_mutex_};
+        if (selected_piece_coordinate_.has_value()) {
+            if (!selected_piece_valid_moves_->test(coord)) {
+                spdlog::debug("invalid move");
+            } else {
+                spdlog::debug("moving from {} to {}", *selected_piece_coordinate_, coord);
+                pieces_.move_piece(*selected_piece_coordinate_, coord);
+            }
+            selected_piece_coordinate_ = std::nullopt;
+            selected_piece_valid_moves_ = std::nullopt;
+        } else {
+            if (pieces_.occupied(coord)) {
+                selected_piece_coordinate_ = std::optional{coord};
+                selected_piece_valid_moves_ = pieces_.valid_moves(coord);
+            }
         }
-        pieces_.set_piece({next_color, next_type}, coord);
     }
 
     void initialize_event_handlers()
     {
         quit_event_handlers_.add_handler([this](const SDL_QuitEvent& event) { handle_quit_event(event); });
-        mouse_button_down_event_handlers_.add_handler(
-            [this](const SDL_MouseButtonEvent& event) { board_display_.on_button_down(event); });
-        mouse_button_up_event_handlers_.add_handler(
-            [this](const SDL_MouseButtonEvent& event) { board_display_.on_button_up(event); });
+        mouse_button_down_event_handlers_.add_handler([this](const SDL_MouseButtonEvent& event) {
+            board_display_.on_button_down(event);
+        });
+        mouse_button_up_event_handlers_.add_handler([this](const SDL_MouseButtonEvent& event) {
+            board_display_.on_button_up(event);
+        });
     }
 
     void run()
@@ -247,9 +252,6 @@ class ChessApplication
             case SDL_QUIT:
                 quit_event_handlers_.call_all(event->quit);
                 break;
-            case SDL_MOUSEMOTION:
-                mouse_motion_event_handlers_.call_all(event->motion);
-                break;
             case SDL_MOUSEBUTTONDOWN:
                 mouse_button_down_event_handlers_.call_all(event->button);
                 break;
@@ -278,18 +280,25 @@ class ChessApplication
         for (int col = 0; col < board_display_.grid_size.x; ++col) {
             for (int row = 0; row < board_display_.grid_size.y; ++row) {
                 renderer_.set_draw_color(((row + col) % 2 == 0) ? pallete::white : pallete::jasons_dumbass_blue);
-                renderer_.fill_rectangle(board_display_.grid_element({col, row}));
+                renderer_.fill_rectangle(board_display_.grid_element({row, col}));
+            }
+        }
+
+        const auto lock = std::lock_guard{pieces_mutex_};
+        if (selected_piece_coordinate_.has_value() && selected_piece_valid_moves_.has_value()) {
+            renderer_.set_draw_color(pallete::light_green);
+            renderer_.fill_rectangle(board_display_.grid_element(vec2_to_sdl_point(*selected_piece_coordinate_)));
+            for (const auto move : selected_piece_valid_moves_->to_position_vector()) {
+                renderer_.fill_rectangle(board_display_.grid_element(vec2_to_sdl_point(move)));
             }
         }
     }
-
-    void on_grid_view_cell_clicked(const GridView::Point& point) {}
 
     void render_pieces()
     {
         for (int col = 0; col < board_display_.grid_size.x; ++col) {
             for (int row = 0; row < board_display_.grid_size.y; ++row) {
-                const auto coord = dm::Coord<int>{row, col};
+                const auto coord = Coord{row, col};
                 if (!pieces_.occupied(coord)) {
                     continue;
                 }
@@ -317,12 +326,13 @@ class ChessApplication
     static constexpr sdl::Rectangle<int> screen_region{0, 0, 480, 480};
     static constexpr int max_frame_rate_per_second = 100;
     static constexpr auto min_frame_period_ms = std::chrono::milliseconds(1'000) / max_frame_rate_per_second;
-    static constexpr auto window_config = sdl::WindowConfig{.title = "SDL Application",
-                                                            .x_position = SDL_WINDOWPOS_UNDEFINED,
-                                                            .y_position = SDL_WINDOWPOS_UNDEFINED,
-                                                            .width = screen_region.w,
-                                                            .height = screen_region.h,
-                                                            .flags = SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE};
+    static constexpr auto window_config = sdl::WindowConfig{
+        .title = "SDL Application",
+        .x_position = SDL_WINDOWPOS_UNDEFINED,
+        .y_position = SDL_WINDOWPOS_UNDEFINED,
+        .width = screen_region.w,
+        .height = screen_region.h,
+        .flags = SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE};
     static constexpr auto renderer_config =
         sdl::RendererConfig{.index = -1, .flags = SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC};
 
@@ -338,28 +348,30 @@ class ChessApplication
     sdl::Texture pieces_sprites_{sdl::Texture{
         renderer_.make_texture_from_surface(sdl::image::load_image("resources/pieces_sprite_map.png").get())}};
 
-    SpriteGrid<Piece> pieces_sprite_map_{pieces_sprites_.size(),
-                                         sdl::Point<int>{6, 2},
-                                         {
-                                             {{PieceColor::white, PieceType::king}, {0, 0}},
-                                             {{PieceColor::white, PieceType::queen}, {1, 0}},
-                                             {{PieceColor::white, PieceType::bishop}, {2, 0}},
-                                             {{PieceColor::white, PieceType::knight}, {3, 0}},
-                                             {{PieceColor::white, PieceType::rook}, {4, 0}},
-                                             {{PieceColor::white, PieceType::pawn}, {5, 0}},
-                                             {{PieceColor::black, PieceType::king}, {0, 1}},
-                                             {{PieceColor::black, PieceType::queen}, {1, 1}},
-                                             {{PieceColor::black, PieceType::bishop}, {2, 1}},
-                                             {{PieceColor::black, PieceType::knight}, {3, 1}},
-                                             {{PieceColor::black, PieceType::rook}, {4, 1}},
-                                             {{PieceColor::black, PieceType::pawn}, {5, 1}},
-                                         }};
+    SpriteGrid<Piece> pieces_sprite_map_{
+        pieces_sprites_.size(),
+        Point{6, 2},
+        {
+            {{PieceColor::white, PieceType::king}, {0, 0}},
+            {{PieceColor::white, PieceType::queen}, {1, 0}},
+            {{PieceColor::white, PieceType::bishop}, {2, 0}},
+            {{PieceColor::white, PieceType::knight}, {3, 0}},
+            {{PieceColor::white, PieceType::rook}, {4, 0}},
+            {{PieceColor::white, PieceType::pawn}, {5, 0}},
+            {{PieceColor::black, PieceType::king}, {0, 1}},
+            {{PieceColor::black, PieceType::queen}, {1, 1}},
+            {{PieceColor::black, PieceType::bishop}, {2, 1}},
+            {{PieceColor::black, PieceType::knight}, {3, 1}},
+            {{PieceColor::black, PieceType::rook}, {4, 1}},
+            {{PieceColor::black, PieceType::pawn}, {5, 1}},
+        }};
 
-    Pieces pieces_;
     std::mutex pieces_mutex_;
+    BoardPieces pieces_{BoardPieces::make_standard_setup_board()};
+    std::optional<Coord> selected_piece_coordinate_;
+    std::optional<BitBoard> selected_piece_valid_moves_;
 
     EventHandlers<SDL_QuitEvent> quit_event_handlers_;
-    EventHandlers<SDL_MouseMotionEvent> mouse_motion_event_handlers_;
     EventHandlers<SDL_MouseButtonEvent> mouse_button_down_event_handlers_;
     EventHandlers<SDL_MouseButtonEvent> mouse_button_up_event_handlers_;
 };
@@ -371,5 +383,8 @@ int main(int argc, char* argv[])
     Context global_setup{InitFlags::Video};
     image::Context global_image_setup{image::InitFlags::png};
     ChessApplication{}.run();
+
+    float floating = 1.0;
+
     return 0;
 }

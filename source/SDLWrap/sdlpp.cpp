@@ -117,8 +117,8 @@ bool push_event(SDL_Event& event)
     return status == 1;
 }
 
-[[nodiscard]] WindowUniquePtr make_window(const char* title, int x_position, int y_position, int width, int height,
-                                          Uint32 flags)
+[[nodiscard]] WindowUniquePtr
+make_window(const char* title, int x_position, int y_position, int width, int height, Uint32 flags)
 {
     WindowUniquePtr window{SDL_CreateWindow(title, x_position, y_position, width, height, flags)};
     if (window == nullptr) {

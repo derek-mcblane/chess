@@ -3,8 +3,12 @@ BasedOnStyle: LLVM
 Language: Cpp
 IndentWidth: 4
 ColumnLimit: 120
-AllowShortBlocksOnASingleLine: Empty
+AlignAfterOpenBracket: BlockIndent
+BinPackArguments: false
+BinPackParameters: false
+InsertTrailingCommas: Wrapped
 AllowShortFunctionsOnASingleLine: Empty
+AllowShortBlocksOnASingleLine: Empty
 AlwaysBreakTemplateDeclarations: Yes
 DerivePointerAlignment: false
 PointerAlignment: Left

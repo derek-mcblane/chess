@@ -3,12 +3,12 @@
 #include "vec2.h"
 
 #include <bitset>
+#include <set>
 #include <vector>
 
 enum Direction
 {
-    min_direction_ = 0,
-    right = min_direction_,
+    right,
     upright,
     up,
     upleft,
@@ -16,39 +16,50 @@ enum Direction
     downleft,
     down,
     downright,
-    max_direction_,
 };
 
 class BitBoard
 {
   public:
     using Position = dm::Coord<int>;
-    using BitsT = std::uint64_t;
+    using Bits = std::uint64_t;
 
     static constexpr size_t board_size = 8;
+    static constexpr size_t n_bits = 64;
+    static_assert(sizeof(Bits) * CHAR_BIT == n_bits);
 
-    BitBoard() : BitBoard(0) {}
-    BitBoard(const BitsT bits) : bits_(bits) {}
+    constexpr BitBoard() : BitBoard(0) {}
+    constexpr BitBoard(const Bits bits) : bits_(bits) {}
+    constexpr BitBoard(const std::bitset<n_bits> bits) : bits_(bits.to_ullong()) {}
 
-    BitBoard(const BitBoard& other) = default;
-    BitBoard& operator=(const BitBoard&) = default;
+    constexpr BitBoard(const BitBoard& other) = default;
+    constexpr BitBoard& operator=(const BitBoard&) = default;
 
-    BitBoard(BitBoard&& other) = default;
-    BitBoard& operator=(BitBoard&&) = default;
+    constexpr BitBoard(BitBoard&& other) = default;
+    constexpr BitBoard& operator=(BitBoard&&) = default;
 
-    static BitsT position_mask(const Position& position)
+    static Bits position_mask(const Position& position)
     {
         return (top_left >> (position.row() * board_size) >> (position.column()));
     }
+
+    static BitBoard neighbors_cardinal(const Position& position);
+    static BitBoard neighbors_diagonal(const Position& position);
+    static BitBoard neighbors_cardinal_and_diagonal(const Position& position);
 
     [[nodiscard]] bool test(const Position& position) const
     {
         return (bits_ & position_mask(position)) != 0U;
     }
 
-    [[nodiscard]] bool count() const
+    [[nodiscard]] bool empty() const
     {
-        return std::bitset<board_size * board_size>(bits_).count() != 0U;
+        return bits_ == 0U;
+    }
+
+    [[nodiscard]] std::size_t count() const
+    {
+        return std::bitset<n_bits>(bits_).count();
     }
 
     void set(const Position& position)
@@ -65,24 +76,27 @@ class BitBoard
     [[nodiscard]] bool on_edge() const;
 
     template <Direction D>
-    [[nodiscard]] BitBoard shift(const size_t& n = 1) const;
+    [[nodiscard]] BitBoard shift(const size_t n = 1) const;
+
+    [[nodiscard]] BitBoard shift(Direction direction, const size_t n = 1) const;
 
     template <Direction D>
-    BitBoard dilate(const size_t& n = 1)
+    BitBoard dilate(const size_t n = 1)
     {
         BitBoard dilated{bits_};
-        for (int i = 0; i < n; i++) {
+        for (size_t i = 0; i < n; i++) {
             dilated |= dilated.shift<D>(n);
         }
         return dilated;
     }
 
-    [[nodiscard]] std::vector<Position> to_positions() const;
-    [[nodiscard]] std::bitset<board_size * board_size> to_bitset() const;
+    [[nodiscard]] std::vector<Position> to_position_vector() const;
+    [[nodiscard]] std::set<Position> to_position_set() const;
+    [[nodiscard]] std::bitset<n_bits> to_bitset() const;
 
     [[nodiscard]] std::string to_string() const
     {
-        return std::bitset<board_size * board_size>(bits_).to_string();
+        return std::bitset<n_bits>(bits_).to_string();
     }
 
     bool operator==(const BitBoard& other) const
@@ -117,7 +131,7 @@ class BitBoard
     }
     BitBoard operator|(const BitBoard& other) const
     {
-        BitBoard result{bits_};
+        BitBoard result{*this};
         result |= other;
         return result;
     }
@@ -145,22 +159,18 @@ class BitBoard
     {
         return ~bits_;
     }
-    operator bool() const
-    {
-        return bits_ != 0U;
-    }
 
   private:
-    BitsT bits_;
+    Bits bits_;
 
-    static constexpr BitsT top_right = 0b00000001'00000000'00000000'00000000'00000000'00000000'00000000'00000000;
-    static constexpr BitsT top_left = 0b10000000'00000000'00000000'00000000'00000000'00000000'00000000'00000000;
-    static constexpr BitsT bottom_left = 0b00000000'00000000'00000000'00000000'00000000'00000000'00000000'10000000;
-    static constexpr BitsT bottom_right = 0b00000000'00000000'00000000'00000000'00000000'00000000'00000000'00000001;
-    static constexpr BitsT top_edge = 0b11111111'00000000'00000000'00000000'00000000'00000000'00000000'00000000;
-    static constexpr BitsT bottom_edge = 0b00000000'00000000'00000000'00000000'00000000'00000000'00000000'11111111;
-    static constexpr BitsT left_edge = 0b10000000'10000000'10000000'10000000'10000000'10000000'10000000'10000000;
-    static constexpr BitsT right_edge = 0b00000001'00000001'00000001'00000001'00000001'00000001'00000001'00000001;
-    static constexpr BitsT neg_slope = 0b10000000'01000000'00100000'00010000'00001000'00000100'00000010'00000001;
-    static constexpr BitsT pos_slope = 0b00000001'00000010'00000100'00001000'00010000'00100000'01000000'10000000;
+    static constexpr Bits top_right = 0b00000001'00000000'00000000'00000000'00000000'00000000'00000000'00000000;
+    static constexpr Bits top_left = 0b10000000'00000000'00000000'00000000'00000000'00000000'00000000'00000000;
+    static constexpr Bits bottom_left = 0b00000000'00000000'00000000'00000000'00000000'00000000'00000000'10000000;
+    static constexpr Bits bottom_right = 0b00000000'00000000'00000000'00000000'00000000'00000000'00000000'00000001;
+    static constexpr Bits top_edge = 0b11111111'00000000'00000000'00000000'00000000'00000000'00000000'00000000;
+    static constexpr Bits bottom_edge = 0b00000000'00000000'00000000'00000000'00000000'00000000'00000000'11111111;
+    static constexpr Bits left_edge = 0b10000000'10000000'10000000'10000000'10000000'10000000'10000000'10000000;
+    static constexpr Bits right_edge = 0b00000001'00000001'00000001'00000001'00000001'00000001'00000001'00000001;
+    static constexpr Bits neg_slope = 0b10000000'01000000'00100000'00010000'00001000'00000100'00000010'00000001;
+    static constexpr Bits pos_slope = 0b00000001'00000010'00000100'00001000'00010000'00100000'01000000'10000000;
 };

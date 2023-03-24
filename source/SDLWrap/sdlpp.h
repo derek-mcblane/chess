@@ -56,7 +56,8 @@ template <typename T>
 using Point = typename select_point<T>::type;
 
 template <typename Point>
-bool point_equals(Point lhs, Point rhs) {
+bool point_equals(Point lhs, Point rhs)
+{
     return lhs.x == rhs.x && lhs.y == rhs.y;
 }
 
@@ -266,8 +267,8 @@ using RendererUniquePtr = std::unique_ptr<SDL_Renderer, RendererDeleter>;
 using TextureUniquePtr = std::unique_ptr<SDL_Texture, TextureDeleter>;
 using SurfaceUniquePtr = std::unique_ptr<SDL_Surface, SurfaceDeleter>;
 
-[[nodiscard]] WindowUniquePtr make_window(const char* title, int x_position, int y_position, int width, int height,
-                                          Uint32 flags);
+[[nodiscard]] WindowUniquePtr
+make_window(const char* title, int x_position, int y_position, int width, int height, Uint32 flags);
 [[nodiscard]] WindowUniquePtr make_window(const WindowConfig& config);
 
 [[nodiscard]] RendererUniquePtr make_renderer(SDL_Window* window, int index, Uint32 flags);
@@ -277,8 +278,8 @@ using SurfaceUniquePtr = std::unique_ptr<SDL_Surface, SurfaceDeleter>;
 
 [[nodiscard]] SurfaceUniquePtr load_bmp(const std::string& filename);
 
-[[nodiscard]] SurfaceUniquePtr convert_surface(SurfaceUniquePtr surface, const SDL_PixelFormat* format,
-                                               Uint32 flags = 0);
+[[nodiscard]] SurfaceUniquePtr
+convert_surface(SurfaceUniquePtr surface, const SDL_PixelFormat* format, Uint32 flags = 0);
 
 class Texture
 {
