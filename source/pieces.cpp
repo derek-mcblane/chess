@@ -24,59 +24,7 @@ const std::map<PieceType, std::string> piece_type_names{
     {PieceType::none, "none"},
 };
 
-[[nodiscard]] PieceType next_piece_type(const PieceType type)
-{
-    switch (type) {
-    case PieceType::pawn:
-        return PieceType::knight;
-    case PieceType::knight:
-        return PieceType::bishop;
-    case PieceType::bishop:
-        return PieceType::rook;
-    case PieceType::rook:
-        return PieceType::queen;
-    case PieceType::queen:
-        return PieceType::king;
-    case PieceType::king:
-        return PieceType::none;
-    case PieceType::none:
-        return PieceType::pawn;
-    default:
-        assert(!"invalid PieceType");
-        return PieceType::none;
-    }
-}
-
-[[nodiscard]] PieceColor next_piece_color(const PieceColor color)
-{
-    switch (color) {
-    case PieceColor::black:
-        return PieceColor::white;
-    case PieceColor::white:
-        return PieceColor::none;
-    case PieceColor::none:
-        return PieceColor::black;
-    default:
-        assert(!"invalid PieceColor");
-        return PieceColor::none;
-    }
-}
-
-[[nodiscard]] PieceColor toggle_piece_color(const PieceColor color)
-{
-    switch (color) {
-    case PieceColor::black:
-        return PieceColor::white;
-    case PieceColor::white:
-        return PieceColor::black;
-    case PieceColor::none:
-    default:
-        assert(!"invalid PieceColor");
-        return PieceColor::none;
-    }
-}
-
-void BoardPieces::set_piece(const Piece& piece, const Coord& position)
+void BoardPieces::set_piece(const Piece& piece, const Position& position)
 {
     clear_piece(position);
 
@@ -124,7 +72,7 @@ void BoardPieces::set_piece(const Piece& piece, const Coord& position)
     }
 }
 
-void BoardPieces::move_piece(const Coord& from, const Coord& to)
+void BoardPieces::move_piece(const Position& from, const Position& to)
 {
     assert(occupied(from) && "move from empty square");
 
@@ -136,7 +84,7 @@ void BoardPieces::move_piece(const Coord& from, const Coord& to)
     clear_piece(from);
 }
 
-void BoardPieces::clear_piece(const Coord& position)
+void BoardPieces::clear_piece(const Position& position)
 {
     if (!occupied(position)) {
         return;
@@ -183,12 +131,17 @@ void BoardPieces::clear_piece(const Coord& position)
     occupied_.reset(position);
 }
 
-[[nodiscard]] bool BoardPieces::occupied(const Coord& position) const
+[[nodiscard]] bool BoardPieces::occupied(const Position& position) const
 {
-    return occupied_.test(position);
+    return occupied(BitBoard::make_from_position(position));
 }
 
-[[nodiscard]] Piece BoardPieces::occupant_at(const Coord& position) const
+[[nodiscard]] bool BoardPieces::occupied(const BitBoard position) const
+{
+    return occupied_.test_all(position);
+}
+
+[[nodiscard]] Piece BoardPieces::occupant_at(const Position& position) const
 {
     if (!occupied(position)) {
         return null_piece;
@@ -196,31 +149,36 @@ void BoardPieces::clear_piece(const Coord& position)
     return Piece{.color = piece_color_at(position), .type = piece_type_at(position)};
 }
 
-[[nodiscard]] bool BoardPieces::is_valid_move(const Coord& from, const Coord& to)
+[[nodiscard]] bool BoardPieces::is_valid_move(const Position& from, const Position& to)
 {
     return valid_moves_bitboard(from).test(to);
 }
 
-[[nodiscard]] BitBoard BoardPieces::valid_moves(const Coord& from)
+[[nodiscard]] BitBoard BoardPieces::valid_moves(const Position& from)
 {
     return valid_moves_bitboard(from);
 }
 
-[[nodiscard]] PieceColor BoardPieces::piece_color_at(const Coord& position) const
+[[nodiscard]] PieceColor BoardPieces::piece_color_at(const Position& position) const
+{
+    return piece_color_at(BitBoard::make_from_position(position));
+}
+
+[[nodiscard]] PieceColor BoardPieces::piece_color_at(const BitBoard& position) const
 {
     if (!occupied(position)) {
         return PieceColor::none;
     }
-    if (white_.test(position)) {
-        return PieceColor::white;
-    }
-    if (black_.test(position)) {
+    if (black_.test_all(position)) {
         return PieceColor::black;
+    }
+    if (white_.test_all(position)) {
+        return PieceColor::white;
     }
     return PieceColor::none;
 }
 
-[[nodiscard]] PieceType BoardPieces::piece_type_at(const Coord& position) const
+[[nodiscard]] PieceType BoardPieces::piece_type_at(const Position& position) const
 {
     if (!occupied(position)) {
         return PieceType::none;
@@ -246,43 +204,71 @@ void BoardPieces::clear_piece(const Coord& position)
     return PieceType::none;
 }
 
-[[nodiscard]] BitBoard BoardPieces::pawn_moves(const Coord& from)
+[[nodiscard]] BitBoard BoardPieces::pawn_moves(const Position& from) const
 {
-    if (piece_color_at(from) == PieceColor::white) {
-        return BitBoard{BitBoard::position_mask(from)}.dilate<up>();
-    } else {
-        return BitBoard{BitBoard::position_mask(from)}.dilate<down>();
+    switch (piece_color_at(from)) {
+    case PieceColor::white:
+        return BitBoard::make_from_position(from).dilate<up>();
+    case PieceColor::black:
+        return BitBoard::make_from_position(from).dilate<down>();
+    case PieceColor::none:
+        assert(!"no pawn at `from` position");
     }
+    return {};
 }
 
-[[nodiscard]] BitBoard BoardPieces::knight_moves(const Coord& from)
+[[nodiscard]] BitBoard BoardPieces::knight_moves(const Position& from) const
 {
-    return ~0ULL;
+    static const BitBoard knight_moves_board{std::bitset<64>{"01010000"
+                                                             "10001000"
+                                                             "00000000"
+                                                             "10001000"
+                                                             "01010000"
+                                                             "00000000"
+                                                             "00000000"
+                                                             "00000000"}};
+    static const Position knight_moves_origin{2, 2};
+
+    const Position offset = from - knight_moves_origin;
+    return BitBoard{knight_moves_board}.shift_assign(offset);
 }
 
-[[nodiscard]] BitBoard BoardPieces::bishop_moves(const Coord& from)
+[[nodiscard]] BitBoard BoardPieces::bishop_moves(const Position& from) const
 {
-    return ~0ULL;
+    static constexpr std::array<Direction, 4> directions = {
+        Direction::upright, Direction::upleft, Direction::downleft, Direction::downright};
+    return sliding_moves(from, directions);
 }
 
-[[nodiscard]] BitBoard BoardPieces::rook_moves(const Coord& from)
+[[nodiscard]] BitBoard BoardPieces::rook_moves(const Position& from) const
 {
-    return ~0ULL;
+    static constexpr std::array<Direction, 4> directions = {
+        Direction::right, Direction::up, Direction::left, Direction::down};
+    return sliding_moves(from, directions);
 }
 
-[[nodiscard]] BitBoard BoardPieces::queen_moves(const Coord& from)
+[[nodiscard]] BitBoard BoardPieces::queen_moves(const Position& from) const
 {
-    return ~0ULL;
+    static constexpr std::array<Direction, 8> directions = {
+        Direction::right,
+        Direction::upright,
+        Direction::up,
+        Direction::upleft,
+        Direction::left,
+        Direction::downleft,
+        Direction::down,
+        Direction::downright};
+    return sliding_moves(from, directions);
 }
 
-[[nodiscard]] BitBoard BoardPieces::king_moves(const Coord& from)
+[[nodiscard]] BitBoard BoardPieces::king_moves(const Position& from) const
 {
     const auto moves = BitBoard::neighbors_cardinal_and_diagonal(from);
     spdlog::debug("king moves: {}", moves);
     return moves;
 }
 
-[[nodiscard]] BitBoard BoardPieces::valid_moves_bitboard(const Coord& from)
+[[nodiscard]] BitBoard BoardPieces::valid_moves_bitboard(const Position& from) const
 {
     BitBoard moves;
     switch (piece_type_at(from)) {
@@ -311,47 +297,27 @@ void BoardPieces::clear_piece(const Coord& position)
     return moves;
 }
 
-/// @todo: use loops
-[[nodiscard]] BoardPieces BoardPieces::make_standard_setup_board()
+BoardPieces BoardPieces::make_standard_setup_board()
 {
+    static const std::vector<PieceType> back_row{
+        PieceType::rook,
+        PieceType::bishop,
+        PieceType::knight,
+        PieceType::queen,
+        PieceType::king,
+        PieceType::bishop,
+        PieceType::knight,
+        PieceType::rook};
+
     BoardPieces pieces;
-
-    pieces.set_piece({PieceColor::black, PieceType::rook}, {0, 0});
-    pieces.set_piece({PieceColor::black, PieceType::bishop}, {0, 1});
-    pieces.set_piece({PieceColor::black, PieceType::knight}, {0, 2});
-    pieces.set_piece({PieceColor::black, PieceType::queen}, {0, 3});
-    pieces.set_piece({PieceColor::black, PieceType::king}, {0, 4});
-    pieces.set_piece({PieceColor::black, PieceType::bishop}, {0, 5});
-    pieces.set_piece({PieceColor::black, PieceType::knight}, {0, 6});
-    pieces.set_piece({PieceColor::black, PieceType::rook}, {0, 7});
-
-    pieces.set_piece({PieceColor::black, PieceType::pawn}, {1, 0});
-    pieces.set_piece({PieceColor::black, PieceType::pawn}, {1, 1});
-    pieces.set_piece({PieceColor::black, PieceType::pawn}, {1, 2});
-    pieces.set_piece({PieceColor::black, PieceType::pawn}, {1, 3});
-    pieces.set_piece({PieceColor::black, PieceType::pawn}, {1, 4});
-    pieces.set_piece({PieceColor::black, PieceType::pawn}, {1, 5});
-    pieces.set_piece({PieceColor::black, PieceType::pawn}, {1, 6});
-    pieces.set_piece({PieceColor::black, PieceType::pawn}, {1, 7});
-
-    pieces.set_piece({PieceColor::white, PieceType::pawn}, {6, 0});
-    pieces.set_piece({PieceColor::white, PieceType::pawn}, {6, 1});
-    pieces.set_piece({PieceColor::white, PieceType::pawn}, {6, 2});
-    pieces.set_piece({PieceColor::white, PieceType::pawn}, {6, 3});
-    pieces.set_piece({PieceColor::white, PieceType::pawn}, {6, 4});
-    pieces.set_piece({PieceColor::white, PieceType::pawn}, {6, 5});
-    pieces.set_piece({PieceColor::white, PieceType::pawn}, {6, 6});
-    pieces.set_piece({PieceColor::white, PieceType::pawn}, {6, 7});
-
-    pieces.set_piece({PieceColor::white, PieceType::rook}, {7, 0});
-    pieces.set_piece({PieceColor::white, PieceType::bishop}, {7, 1});
-    pieces.set_piece({PieceColor::white, PieceType::knight}, {7, 2});
-    pieces.set_piece({PieceColor::white, PieceType::queen}, {7, 3});
-    pieces.set_piece({PieceColor::white, PieceType::king}, {7, 4});
-    pieces.set_piece({PieceColor::white, PieceType::bishop}, {7, 5});
-    pieces.set_piece({PieceColor::white, PieceType::knight}, {7, 6});
-    pieces.set_piece({PieceColor::white, PieceType::rook}, {7, 7});
-
+    for (Position::dimension_type y = 0; y < BitBoard::board_size; ++y) {
+        pieces.set_piece({PieceColor::black, back_row[y]}, {0, y});
+        pieces.set_piece({PieceColor::white, back_row[y]}, {7, y});
+    }
+    for (Position::dimension_type y = 0; y < BitBoard::board_size; ++y) {
+        pieces.set_piece({PieceColor::black, PieceType::pawn}, {1, y});
+        pieces.set_piece({PieceColor::white, PieceType::pawn}, {6, y});
+    }
     return pieces;
 }
 

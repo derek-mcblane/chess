@@ -20,7 +20,7 @@
 #include <thread>
 
 using namespace chess;
-using Coord = dm::Coord<int>;
+using Position = dm::Vec2<int>;
 using Point = sdl::Point<int>;
 
 template <>
@@ -56,11 +56,11 @@ struct fmt::formatter<Point> : fmt::formatter<std::string>
 };
 
 template <>
-struct fmt::formatter<Coord> : fmt::formatter<std::string>
+struct fmt::formatter<Position> : fmt::formatter<std::string>
 {
-    auto format(Coord point, format_context& ctx) -> decltype(ctx.out())
+    auto format(Position point, format_context& ctx) -> decltype(ctx.out())
     {
-        return format_to(ctx.out(), "[Coord row={}, col={}]", point.row(), point.column());
+        return format_to(ctx.out(), "[Position x={}, y={}]", point.x(), point.y());
     }
 };
 
@@ -78,14 +78,18 @@ struct fmt::formatter<chess::Piece> : fmt::formatter<std::string>
     }
 };
 
-template <typename Vec2>
-sdl::Point<typename Vec2::dimension_type> vec2_to_sdl_point(Vec2 coordinate)
+Point transform_chess_to_grid_view(Position coordinate)
 {
-    return {.x = coordinate.x(), .y = coordinate.y()};
+    return {.x = coordinate.y(), .y = coordinate.x()};
+}
+
+Position transform_grid_view_to_chess(Point coordinate)
+{
+    return {coordinate.y, coordinate.x};
 }
 
 template <typename Rep, typename Period>
-Rep to_milliseconds(std::chrono::duration<Rep, Period> duration)
+Rep to_milliseconds(const std::chrono::duration<Rep, Period> duration)
 {
     return std::chrono::duration_cast<std::chrono::milliseconds>(duration).count();
 }
@@ -98,12 +102,18 @@ sdl::Point<sdl::rectangle_dimension_type<Rectangle>> rectangle_center(Rectangle 
 
 namespace pallete {
 
-constexpr sdl::Color black{0x00, 0x00, 0x00, 0xFF};
-constexpr sdl::Color blue{0x00, 0x00, 0xFF, 0xFF};
-constexpr sdl::Color jasons_dumbass_blue{129, 152, 201, 0xFF};
-constexpr sdl::Color light_green{169, 216, 145, 0xFF};
-constexpr sdl::Color gray{0x0F, 0x0F, 0x0F, 0xFF};
-constexpr sdl::Color white{0xFF, 0xFF, 0xFF, 0xFF};
+[[maybe_unused]] static constexpr sdl::Color black{0x00, 0x00, 0x00, 0xFF};
+[[maybe_unused]] static constexpr sdl::Color blue{0x00, 0x00, 0xFF, 0xFF};
+[[maybe_unused]] static constexpr sdl::Color jasons_dumbass_blue{129, 152, 201, 0xFF};
+[[maybe_unused]] static constexpr sdl::Color light_green{169, 216, 145, 0xFF};
+[[maybe_unused]] static constexpr sdl::Color gray{0x0F, 0x0F, 0x0F, 0xFF};
+[[maybe_unused]] static constexpr sdl::Color white{0xFF, 0xFF, 0xFF, 0xFF};
+
+[[nodiscard]] sdl::Color color_with_alpha(sdl::Color color, Uint8 alpha)
+{
+    color.a = alpha;
+    return color;
+}
 
 } // namespace pallete
 
@@ -188,10 +198,10 @@ class ChessApplication
     void on_grid_cell_clicked(const Point& point)
     {
         spdlog::debug("clicked cell {}", point);
-        const auto coord = Coord{point.x, point.y};
+        const auto coord = transform_grid_view_to_chess(point);
 
         const auto lock = std::lock_guard{pieces_mutex_};
-        if (selected_piece_coordinate_.has_value()) {
+        if (selected_piece_coordinate_.has_value() && selected_piece_valid_moves_.has_value()) {
             if (!selected_piece_valid_moves_->test(coord)) {
                 spdlog::debug("invalid move");
             } else {
@@ -277,19 +287,25 @@ class ChessApplication
 
     void render_board()
     {
+        renderer_.set_draw_blend_mode(SDL_BLENDMODE_NONE);
         for (int col = 0; col < board_display_.grid_size.x; ++col) {
             for (int row = 0; row < board_display_.grid_size.y; ++row) {
                 renderer_.set_draw_color(((row + col) % 2 == 0) ? pallete::white : pallete::jasons_dumbass_blue);
-                renderer_.fill_rectangle(board_display_.grid_element({row, col}));
+                renderer_.fill_rectangle(board_display_.grid_cell({row, col}));
             }
         }
 
+        renderer_.set_draw_blend_mode(SDL_BLENDMODE_BLEND);
         const auto lock = std::lock_guard{pieces_mutex_};
         if (selected_piece_coordinate_.has_value() && selected_piece_valid_moves_.has_value()) {
-            renderer_.set_draw_color(pallete::light_green);
-            renderer_.fill_rectangle(board_display_.grid_element(vec2_to_sdl_point(*selected_piece_coordinate_)));
+            auto selected_color = pallete::light_green;
+            selected_color.a = 0x7F;
+            renderer_.set_draw_color(selected_color);
+            renderer_.fill_rectangle(board_display_.grid_cell(transform_chess_to_grid_view(*selected_piece_coordinate_))
+            );
             for (const auto move : selected_piece_valid_moves_->to_position_vector()) {
-                renderer_.fill_rectangle(board_display_.grid_element(vec2_to_sdl_point(move)));
+                const auto grid_cell = board_display_.grid_cell(transform_chess_to_grid_view(move));
+                renderer_.fill_rectangle(grid_cell);
             }
         }
     }
@@ -298,13 +314,13 @@ class ChessApplication
     {
         for (int col = 0; col < board_display_.grid_size.x; ++col) {
             for (int row = 0; row < board_display_.grid_size.y; ++row) {
-                const auto coord = Coord{row, col};
+                const auto coord = Position{row, col};
                 if (!pieces_.occupied(coord)) {
                     continue;
                 }
                 const auto piece_rect = pieces_sprite_map_.get_region(pieces_.occupant_at(coord));
-                const auto piece_position = board_display_.grid_element_position(vec2_to_sdl_point(coord));
-                const auto piece_size = board_display_.element_size();
+                const auto piece_position = board_display_.grid_cell_position(transform_chess_to_grid_view(coord));
+                const auto piece_size = board_display_.cell_size();
                 const auto screen_rect =
                     sdl::Rectangle<int>{piece_position.x, piece_position.y, piece_size.x, piece_size.y};
                 renderer_.copy<int>(pieces_sprites_, piece_rect, screen_rect);
@@ -368,7 +384,7 @@ class ChessApplication
 
     std::mutex pieces_mutex_;
     BoardPieces pieces_{BoardPieces::make_standard_setup_board()};
-    std::optional<Coord> selected_piece_coordinate_;
+    std::optional<Position> selected_piece_coordinate_;
     std::optional<BitBoard> selected_piece_valid_moves_;
 
     EventHandlers<SDL_QuitEvent> quit_event_handlers_;
@@ -378,13 +394,9 @@ class ChessApplication
 
 int main(int argc, char* argv[])
 {
-    using namespace sdl;
     spdlog::set_level(spdlog::level::debug);
-    Context global_setup{InitFlags::Video};
-    image::Context global_image_setup{image::InitFlags::png};
+    sdl::Context global_setup{sdl::InitFlags::Video};
+    sdl::image::Context global_image_setup{sdl::image::InitFlags::png};
     ChessApplication{}.run();
-
-    float floating = 1.0;
-
     return 0;
 }

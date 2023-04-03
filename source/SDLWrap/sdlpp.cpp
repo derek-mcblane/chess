@@ -178,6 +178,33 @@ make_window(const char* title, int x_position, int y_position, int width, int he
     return converted_surface;
 }
 
+template <>
+void Renderer::draw_point<int>(int point_x, int point_y) const
+{
+    if (SDL_RenderDrawPoint(get(), point_x, point_y) != 0) {
+        throw exception::generic_error{};
+    }
+}
+
+template <>
+void Renderer::draw_point<float>(float point_x, float point_y) const
+{
+    if (SDL_RenderDrawPointF(get(), point_x, point_y) != 0) {
+        throw exception::generic_error{};
+    }
+}
+
+template<>
+void Renderer::draw_point<Point<int>>(Point<int> point) const {
+    draw_point(point.x, point.y);
+}
+
+template<>
+void Renderer::draw_point<Point<float>>(Point<float> point) const {
+    draw_point(point.x, point.y);
+}
+
+
 void Renderer::draw_line(int x_begin, int y_begin, int x_end, int y_end) const
 {
     if (SDL_RenderDrawLine(get(), x_begin, y_begin, x_end, y_end) != 0) {
@@ -189,6 +216,7 @@ void Renderer::draw_line(Point<int> begin, Point<int> end) const
 {
     draw_line(begin.x, begin.y, end.x, end.y);
 }
+
 
 template <>
 void Renderer::fill_rectangle<Rectangle<int>>(const Rectangle<int>& rectangle)

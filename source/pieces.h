@@ -25,10 +25,6 @@ enum class PieceType : int
 };
 extern const std::map<PieceType, std::string> piece_type_names;
 
-[[nodiscard]] PieceType next_piece_type(const PieceType type);
-[[nodiscard]] PieceColor next_piece_color(const PieceColor color);
-[[nodiscard]] PieceColor toggle_piece_color(const PieceColor color);
-
 struct Piece
 {
     PieceColor color;
@@ -78,28 +74,55 @@ inline constexpr Piece null_piece{.color = PieceColor::none, .type = PieceType::
 class BoardPieces
 {
   public:
-    using Coord = dm::Coord<int>;
+    using Position = BitBoard::Position;
 
-    void set_piece(const Piece& piece, const Coord& position);
-    void move_piece(const Coord& from, const Coord& to);
-    void clear_piece(const Coord& position);
-    [[nodiscard]] bool occupied(const Coord& position) const;
-    [[nodiscard]] PieceColor piece_color_at(const Coord& position) const;
-    [[nodiscard]] PieceType piece_type_at(const Coord& position) const;
-    [[nodiscard]] Piece occupant_at(const Coord& position) const;
-    [[nodiscard]] bool is_valid_move(const Coord& from, const Coord& to);
-    [[nodiscard]] BitBoard valid_moves(const Coord& from);
+    void set_piece(const Piece& piece, const Position& position);
+    void move_piece(const Position& from, const Position& to);
+    void clear_piece(const Position& position);
+    [[nodiscard]] bool occupied(const Position& position) const;
+    [[nodiscard]] PieceColor piece_color_at(const Position& position) const;
+    [[nodiscard]] PieceType piece_type_at(const Position& position) const;
+    [[nodiscard]] Piece occupant_at(const Position& position) const;
+    [[nodiscard]] bool is_valid_move(const Position& from, const Position& to);
+    [[nodiscard]] BitBoard valid_moves(const Position& from);
 
     [[nodiscard]] static BoardPieces make_standard_setup_board();
 
   private:
-    [[nodiscard]] BitBoard pawn_moves(const Coord& from);
-    [[nodiscard]] BitBoard knight_moves(const Coord& from);
-    [[nodiscard]] BitBoard bishop_moves(const Coord& from);
-    [[nodiscard]] BitBoard rook_moves(const Coord& from);
-    [[nodiscard]] BitBoard queen_moves(const Coord& from);
-    [[nodiscard]] BitBoard king_moves(const Coord& from);
-    [[nodiscard]] BitBoard valid_moves_bitboard(const Coord& from);
+    [[nodiscard]] bool occupied(BitBoard position) const;
+    [[nodiscard]] PieceColor piece_color_at(const BitBoard& position) const;
+
+    [[nodiscard]] BitBoard pawn_moves(const Position& from) const;
+    [[nodiscard]] BitBoard knight_moves(const Position& from) const;
+    [[nodiscard]] BitBoard bishop_moves(const Position& from) const;
+    [[nodiscard]] BitBoard rook_moves(const Position& from) const;
+    [[nodiscard]] BitBoard queen_moves(const Position& from) const;
+    [[nodiscard]] BitBoard king_moves(const Position& from) const;
+    [[nodiscard]] BitBoard valid_moves_bitboard(const Position& from) const;
+
+    template <typename DirectionRange>
+    [[nodiscard]] BitBoard sliding_moves(const Position& from, DirectionRange&& directions) const
+    {
+        BitBoard moves;
+        for (const auto direction : std::forward<DirectionRange>(directions)) {
+            BitBoard candidates{from};
+            BitBoard prev_candidates{candidates};
+            while (!candidates.on_edge(direction)) {
+                prev_candidates = candidates;
+                candidates.dilate(direction);
+
+                const BitBoard candidate{prev_candidates ^ candidates};
+                if (occupied(candidate)) {
+                    if (piece_color_at(from) == piece_color_at(candidate)) {
+                        candidates.reset(candidate);
+                    }
+                    break;
+                }
+            }
+            moves.set(candidates);
+        }
+        return moves.reset(from);
+    }
 
     BitBoard occupied_;
     BitBoard white_;

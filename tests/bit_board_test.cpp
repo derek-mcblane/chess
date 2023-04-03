@@ -6,6 +6,9 @@
 #include <bitset>
 #include <iterator>
 
+class BitBoardShiftTest : public ::testing::Test
+{};
+
 static const BitBoard test_board{std::bitset<64>{"10101010"
                                                  "01010101"
                                                  "10101010"
@@ -87,7 +90,24 @@ static const BitBoard downright_board{std::bitset<64>{"00000000"
                                                       "00101010"
                                                       "01010101"}};
 
-TEST(Board, SetAndTest)
+TEST(BoardSetBit, Single)
+{
+    BitBoard board;
+    board.set({4, 2});
+    EXPECT_EQ(
+        board.to_string(),
+        "00000000"
+        "00000000"
+        "00000000"
+        "00000000"
+        "00100000"
+        "00000000"
+        "00000000"
+        "00000000"
+    );
+}
+
+TEST(BoardSetBit, Checkered)
 {
     BitBoard bits;
     for (int row = 0; row < BitBoard::board_size; row += 1) {
@@ -95,6 +115,68 @@ TEST(Board, SetAndTest)
             bits.set({row, col});
         }
     }
+    EXPECT_EQ(bits.to_string(), test_board.to_string());
+}
+
+TEST(BoardTestBit, Checkered)
+{
+    BitBoard bits{test_board};
+    for (int row = 0; row < BitBoard::board_size; row += 1) {
+        for (int col = (row % 2 == 0) ? 0 : 1; col < BitBoard::board_size; col += 2) {
+            EXPECT_TRUE(bits.test({row, col}));
+        }
+        for (int col = (row % 2 == 0) ? 1 : 0; col < BitBoard::board_size; col += 2) {
+            EXPECT_FALSE(bits.test({row, col}));
+        }
+    }
+}
+
+TEST(BoardTestAny, True)
+{
+    static const BitBoard square{std::bitset<64>{"00000000"
+                                                 "00000000"
+                                                 "00111100"
+                                                 "00111100"
+                                                 "00111100"
+                                                 "00111100"
+                                                 "00000000"
+                                                 "00000000"}};
+    EXPECT_TRUE(test_board.test_any(square));
+    EXPECT_TRUE(square.test_any(test_board));
+}
+
+TEST(BoardTestAny, False)
+{
+    static const BitBoard left_board{std::bitset<64>{"11110000"
+                                                     "11110000"
+                                                     "11110000"
+                                                     "11110000"
+                                                     "11110000"
+                                                     "11110000"
+                                                     "11110000"
+                                                     "11110000"}};
+
+    static const BitBoard right_board{std::bitset<64>{"00001111"
+                                                      "00001111"
+                                                      "00001111"
+                                                      "00001111"
+                                                      "00001111"
+                                                      "00001111"
+                                                      "00001111"
+                                                      "00001111"}};
+    EXPECT_FALSE(left_board.test_any(right_board));
+    EXPECT_FALSE(right_board.test_any(left_board));
+}
+
+TEST(Board, TestAll)
+{
+    EXPECT_TRUE(test_board.test_all(test_board));
+}
+
+TEST(Board, SetBoard)
+{
+    BitBoard bits;
+    bits.set(test_board);
     EXPECT_EQ(bits.to_string(), test_board.to_string());
 }
 
@@ -136,6 +218,126 @@ TEST(BoardStaticShift, ShiftDown)
 TEST(BoardStaticShift, ShiftDownRight)
 {
     EXPECT_EQ(test_board.shift<Direction::downright>(1).to_string(), downright_board.to_string());
+}
+
+TEST(BoardStaticShift, ShiftRightN)
+{
+    EXPECT_EQ(
+        test_board.shift<Direction::right>(5).to_string(),
+        "00000101"
+        "00000010"
+        "00000101"
+        "00000010"
+        "00000101"
+        "00000010"
+        "00000101"
+        "00000010"
+    );
+}
+
+TEST(BoardStaticShift, ShiftUpRightN)
+{
+    EXPECT_EQ(
+        test_board.shift<Direction::upright>(5).to_string(),
+        "00000010"
+        "00000101"
+        "00000010"
+        "00000000"
+        "00000000"
+        "00000000"
+        "00000000"
+        "00000000"
+    );
+}
+
+TEST(BoardStaticShift, ShiftUpN)
+{
+    EXPECT_EQ(
+        test_board.shift<Direction::up>(5).to_string(),
+        "01010101"
+        "10101010"
+        "01010101"
+        "00000000"
+        "00000000"
+        "00000000"
+        "00000000"
+        "00000000"
+    );
+}
+
+TEST(BoardStaticShift, ShiftUpLeftN)
+{
+    EXPECT_EQ(
+        test_board.shift<Direction::upleft>(5).to_string(),
+        "10100000"
+        "01000000"
+        "10100000"
+        "00000000"
+        "00000000"
+        "00000000"
+        "00000000"
+        "00000000"
+    );
+}
+
+TEST(BoardStaticShift, ShiftLeftN)
+{
+    EXPECT_EQ(
+        test_board.shift<Direction::left>(5).to_string(),
+        "01000000"
+        "10100000"
+        "01000000"
+        "10100000"
+        "01000000"
+        "10100000"
+        "01000000"
+        "10100000"
+    );
+}
+
+TEST(BoardStaticShift, ShiftDownLeftN)
+{
+    EXPECT_EQ(
+        test_board.shift<Direction::downleft>(5).to_string(),
+        "00000000"
+        "00000000"
+        "00000000"
+        "00000000"
+        "00000000"
+        "01000000"
+        "10100000"
+        "01000000"
+    );
+}
+
+TEST(BoardStaticShift, ShiftDownN)
+{
+    EXPECT_EQ(
+        test_board.shift<Direction::down>(5).to_string(),
+        "00000000"
+        "00000000"
+        "00000000"
+        "00000000"
+        "00000000"
+        "10101010"
+        "01010101"
+        "10101010"
+    );
+}
+
+TEST(BoardStaticShift, ShiftDownRightN)
+{
+    EXPECT_EQ(
+        test_board.shift<Direction::downright>(5).to_string(),
+        "00000000"
+        "00000000"
+        "00000000"
+        "00000000"
+        "00000000"
+        "00000101"
+        "00000010"
+        "00000101"
+    );
 }
 
 TEST(BoardDynamicShift, ShiftAll)

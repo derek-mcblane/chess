@@ -349,6 +349,22 @@ class Renderer
         return renderer_.get();
     }
 
+    void set_draw_blend_mode(SDL_BlendMode mode) const
+    {
+        if (SDL_SetRenderDrawBlendMode(get(), mode) != 0) {
+            throw exception::generic_error{};
+        }
+    }
+
+    [[nodiscard]] SDL_BlendMode get_draw_blend_mode() const
+    {
+        SDL_BlendMode mode;
+        if (SDL_GetRenderDrawBlendMode(get(), &mode) != 0) {
+            throw exception::generic_error{};
+        }
+        return mode;
+    }
+
     void set_draw_color(const Color& color) const
     {
         if (SDL_SetRenderDrawColor(get(), color.r, color.g, color.b, color.a) != 0) {
@@ -367,6 +383,11 @@ class Renderer
     {
         SDL_RenderPresent(get());
     }
+
+    template <typename T>
+    void draw_point(T point_x, T point_y) const;
+    template <typename Point>
+    void draw_point(Point point) const;
 
     void draw_line(int x_begin, int y_begin, int x_end, int y_end) const;
     void draw_line(Point<int> begin, Point<int> end) const;
