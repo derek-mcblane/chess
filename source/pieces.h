@@ -1,8 +1,8 @@
 #include "bit_board.h"
 #include "vec2.h"
 
+#include <cassert>
 #include <map>
-#include <optional>
 
 namespace chess {
 
@@ -13,6 +13,18 @@ enum class PieceColor : int
     none,
 };
 extern const std::map<PieceColor, std::string> piece_color_names;
+
+inline PieceColor opposite_color(const PieceColor color)
+{
+    if (color == PieceColor::black) {
+        return PieceColor::white;
+    }
+    if (color == PieceColor::white) {
+        return PieceColor::black;
+    }
+    assert(!"invalid color");
+    return PieceColor::none;
+}
 
 enum class PieceType : int
 {
@@ -84,13 +96,20 @@ class BoardPieces
     [[nodiscard]] bool occupied(const Position& position) const;
     [[nodiscard]] PieceColor piece_color_at(const Position& position) const;
     [[nodiscard]] PieceType piece_type_at(const Position& position) const;
-    [[nodiscard]] Piece occupant_at(const Position& position) const;
+    [[nodiscard]] Piece piece_at(const Position& position) const;
     [[nodiscard]] bool is_valid_move(const Position& from, const Position& to);
     [[nodiscard]] BitBoard valid_moves(const Position& from);
 
     [[nodiscard]] static BoardPieces make_standard_setup_board();
 
   private:
+    struct Move
+    {
+        Piece piece;
+        Position from;
+        Position to;
+    };
+
     inline static const Position::dimension_type black_piece_row{0};
     inline static const Position::dimension_type black_pawn_row{1};
     inline static const Position black_king_position{0, 4};
@@ -108,8 +127,9 @@ class BoardPieces
     void set_pieces(const Piece& piece, BitBoard positions);
     void set_squares_attacked_by(const Position& position);
     void clear_squares_attacked_by(const Position& position);
-    void update_en_passant_state(const Position& from, const Position& to);
-    void update_castling_state(const Position& from, const Position& to);
+    void update_after_move(Move move);
+    void update_en_passant_state(Move move);
+    void update_castling_state(Move move);
 
     [[nodiscard]] BitBoard pawn_moves(const Position& from) const;
     [[nodiscard]] BitBoard knight_moves(const Position& from) const;
@@ -158,24 +178,22 @@ class BoardPieces
     [[nodiscard]] bool on_pawn_start_square(const Position& from) const;
     void remove_if_color(BitBoard& moves, const PieceColor& color) const;
 
-    BitBoard occupied_;
+    std::vector<Move> moves_;
+    std::map<Position, BitBoard> attacked_by_;
     BitBoard black_;
     BitBoard white_;
-    BitBoard attacked_by_black_;
-    BitBoard attacked_by_white_;
-    BitBoard en_passant_square_;
     BitBoard pawns_;
     BitBoard knights_;
     BitBoard bishops_;
     BitBoard rooks_;
     BitBoard queens_;
     BitBoard kings_;
-    bool black_king_moved_{false};
-    bool black_queenside_rook_moved_{false};
-    bool black_kingside_rook_moved_{false};
-    bool white_king_moved_{false};
-    bool white_queenside_rook_moved_{false};
-    bool white_kingside_rook_moved_{false};
+    BitBoard occupied_;
+    BitBoard en_passant_square_;
+    bool black_queenside_castle_piece_moved_{false};
+    bool black_kingside_castle_piece_moved_{false};
+    bool white_queenside_castle_piece_moved_{false};
+    bool white_kingside_castle_piece_moved_{false};
 };
 
 } // namespace chess

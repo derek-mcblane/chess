@@ -318,7 +318,7 @@ class ChessApplication
                 if (!pieces_.occupied(coord)) {
                     continue;
                 }
-                const auto piece_rect = pieces_sprite_map_.get_region(pieces_.occupant_at(coord));
+                const auto piece_rect = pieces_sprite_map_.get_region(pieces_.piece_at(coord));
                 const auto piece_position = board_display_.grid_cell_position(transform_chess_to_grid_view(coord));
                 const auto piece_size = board_display_.cell_size();
                 const auto screen_rect =

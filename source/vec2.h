@@ -15,6 +15,7 @@ class Vec2
   public:
     using dimension_type = T;
 
+    Vec2() : Vec2{0, 0} {}
     Vec2(T x, T y) : elements_{x, y} {}
     Vec2(std::initializer_list<T> list)
     {

@@ -176,6 +176,11 @@ class BitBoard
         return reset(BitBoard::make_from_position(position));
     }
 
+    BitBoard& reset_all()
+    {
+        return reset(BitBoard::make_full());
+    }
+
     template <Direction D>
     [[nodiscard]] bool on_edge() const;
 
