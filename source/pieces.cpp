@@ -11,7 +11,6 @@ namespace chess {
 const std::map<PieceColor, std::string> piece_color_names{
     {PieceColor::white, "white"},
     {PieceColor::black, "black"},
-    {PieceColor::none, "none"},
 };
 
 const std::map<PieceType, std::string> piece_type_names{
@@ -21,7 +20,6 @@ const std::map<PieceType, std::string> piece_type_names{
     {PieceType::rook, "rook"},
     {PieceType::queen, "queen"},
     {PieceType::king, "king"},
-    {PieceType::none, "none"},
 };
 
 void BoardPieces::clear_pieces(const BitBoard board)
@@ -37,13 +35,9 @@ void BoardPieces::clear_pieces(const BitBoard board)
     kings_.reset(board);
 }
 
-void BoardPieces::set_pieces(const Piece& piece, const BitBoard positions)
+void BoardPieces::set_pieces(const Piece piece, const BitBoard positions)
 {
     clear_pieces(positions);
-
-    if (piece == null_piece) {
-        return;
-    }
 
     occupied_.set(positions);
     switch (piece.type) {
@@ -65,9 +59,6 @@ void BoardPieces::set_pieces(const Piece& piece, const BitBoard positions)
     case PieceType::king:
         kings_.set(positions);
         break;
-    case PieceType::none:
-        assert(!"no piece type");
-        break;
     }
 
     switch (piece.color) {
@@ -76,9 +67,6 @@ void BoardPieces::set_pieces(const Piece& piece, const BitBoard positions)
         break;
     case PieceColor::white:
         white_.set(positions);
-        break;
-    case PieceColor::none:
-        assert(!"no color type");
         break;
     }
 }
@@ -89,7 +77,7 @@ void BoardPieces::clear_piece(const Position& position)
     clear_pieces(position);
 }
 
-void BoardPieces::set_piece(const Piece& piece, const Position& position)
+void BoardPieces::set_piece(const Piece piece, const Position& position)
 {
     set_pieces(piece, position);
     set_squares_attacked_by(position);
@@ -141,10 +129,10 @@ void BoardPieces::move_piece(const Position& from, const Position& to)
     assert(occupied(from) && "move from empty square");
     assert(from != to && "move `from == to`");
 
-    set_piece(piece_at(from), to);
+    set_piece(*piece_at(from), to);
     clear_piece(from);
 
-    update_after_move(Move{piece_at(to), from, to});
+    update_after_move(Move{*piece_at(to), from, to});
 }
 
 void BoardPieces::clear_squares_attacked_by(const Position& position)
@@ -178,15 +166,15 @@ void BoardPieces::clear_all()
     return occupied_.test_all(position);
 }
 
-[[nodiscard]] PieceColor BoardPieces::piece_color_at(const Position& position) const
+[[nodiscard]] std::optional<PieceColor> BoardPieces::piece_color_at(const Position& position) const
 {
     return piece_color_at(BitBoard{position});
 }
 
-[[nodiscard]] PieceColor BoardPieces::piece_color_at(const BitBoard& position) const
+[[nodiscard]] std::optional<PieceColor> BoardPieces::piece_color_at(const BitBoard& position) const
 {
     if (!occupied(position)) {
-        return PieceColor::none;
+        return {};
     }
     if (black_.test_all(position)) {
         return PieceColor::black;
@@ -194,41 +182,45 @@ void BoardPieces::clear_all()
     if (white_.test_all(position)) {
         return PieceColor::white;
     }
-    return PieceColor::none;
+    return {};
 }
 
-[[nodiscard]] PieceType BoardPieces::piece_type_at(const Position& position) const
+[[nodiscard]] std::optional<PieceType> BoardPieces::piece_type_at(const Position& position) const
 {
-    if (!occupied(position)) {
-        return PieceType::none;
-    }
-    if (pawns_.test(position)) {
+    return piece_type_at(BitBoard{position});
+}
+
+[[nodiscard]] std::optional<PieceType> BoardPieces::piece_type_at(const BitBoard& position) const
+{
+    if (pawns_.test_all(position)) {
         return PieceType::pawn;
     }
-    if (knights_.test(position)) {
+    if (knights_.test_all(position)) {
         return PieceType::knight;
     }
-    if (bishops_.test(position)) {
+    if (bishops_.test_all(position)) {
         return PieceType::bishop;
     }
-    if (rooks_.test(position)) {
+    if (rooks_.test_all(position)) {
         return PieceType::rook;
     }
-    if (queens_.test(position)) {
+    if (queens_.test_all(position)) {
         return PieceType::queen;
     }
-    if (kings_.test(position)) {
+    if (kings_.test_all(position)) {
         return PieceType::king;
     }
-    return PieceType::none;
+    return {};
 }
 
-[[nodiscard]] Piece BoardPieces::piece_at(const Position& position) const
+[[nodiscard]] std::optional<Piece> BoardPieces::piece_at(const Position& position) const
 {
-    if (!occupied(position)) {
-        return null_piece;
+    const auto piece_color = piece_color_at(position);
+    const auto piece_type = piece_type_at(position);
+    if (!piece_color.has_value() || !piece_type.has_value()) {
+        return {};
     }
-    return Piece{.color = piece_color_at(position), .type = piece_type_at(position)};
+    return Piece{.color = *piece_color, .type = *piece_type};
 }
 
 [[nodiscard]] bool BoardPieces::is_valid_move(const Position& from, const Position& to)
@@ -345,7 +337,11 @@ bool BoardPieces::on_pawn_start_square(const Position& from) const
 [[nodiscard]] BitBoard BoardPieces::valid_moves_bitboard(const Position& from) const
 {
     BitBoard moves;
-    switch (piece_type_at(from)) {
+    const auto piece_type = piece_type_at(from);
+    if (!piece_type.has_value()) {
+        return moves;
+    }
+    switch (*piece_type) {
     case PieceType::pawn:
         moves = pawn_moves(from);
         break;
@@ -363,9 +359,6 @@ bool BoardPieces::on_pawn_start_square(const Position& from) const
         break;
     case PieceType::king:
         moves = king_moves(from);
-        break;
-    case PieceType::none:
-    default:
         break;
     }
     return moves;
@@ -394,12 +387,15 @@ BitBoard BoardPieces::sliding_moves(const Position& from, const Direction direct
     }
 }
 
-void BoardPieces::remove_if_color(BitBoard& moves, const PieceColor& color) const
+void BoardPieces::remove_if_color(BitBoard& moves, const std::optional<PieceColor> color) const
 {
-    if (color == PieceColor::white) {
+    if (!color.has_value()) {
+        return;
+    }
+    if (*color == PieceColor::white) {
         moves.reset(white_);
     }
-    if (color == PieceColor::black) {
+    if (*color == PieceColor::black) {
         moves.reset(black_);
     }
 }

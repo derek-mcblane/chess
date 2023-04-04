@@ -10,20 +10,17 @@ enum class PieceColor : int
 {
     black,
     white,
-    none,
 };
 extern const std::map<PieceColor, std::string> piece_color_names;
 
 inline PieceColor opposite_color(const PieceColor color)
 {
-    if (color == PieceColor::black) {
+    switch (color) {
+    case PieceColor::black:
         return PieceColor::white;
-    }
-    if (color == PieceColor::white) {
+    case PieceColor::white:
         return PieceColor::black;
     }
-    assert(!"invalid color");
-    return PieceColor::none;
 }
 
 enum class PieceType : int
@@ -34,7 +31,6 @@ enum class PieceType : int
     rook,
     queen,
     king,
-    none,
 };
 extern const std::map<PieceType, std::string> piece_type_names;
 
@@ -82,21 +78,19 @@ inline bool operator<=(const Piece& lhs, const Piece& rhs)
     return !(rhs > lhs);
 }
 
-inline constexpr Piece null_piece{.color = PieceColor::none, .type = PieceType::none};
-
 class BoardPieces
 {
   public:
     using Position = BitBoard::Position;
 
-    void set_piece(const Piece& piece, const Position& position);
+    void set_piece(Piece piece, const Position& position);
     void move_piece(const Position& from, const Position& to);
     void clear_piece(const Position& position);
     void clear_all();
     [[nodiscard]] bool occupied(const Position& position) const;
-    [[nodiscard]] PieceColor piece_color_at(const Position& position) const;
-    [[nodiscard]] PieceType piece_type_at(const Position& position) const;
-    [[nodiscard]] Piece piece_at(const Position& position) const;
+    [[nodiscard]] std::optional<PieceColor> piece_color_at(const Position& position) const;
+    [[nodiscard]] std::optional<PieceType> piece_type_at(const Position& position) const;
+    [[nodiscard]] std::optional<Piece> piece_at(const Position& position) const;
     [[nodiscard]] bool is_valid_move(const Position& from, const Position& to);
     [[nodiscard]] BitBoard valid_moves(const Position& from);
 
@@ -122,9 +116,10 @@ class BoardPieces
     inline static const Position white_kingside_rook_position{7, 7};
 
     [[nodiscard]] bool occupied(BitBoard position) const;
-    [[nodiscard]] PieceColor piece_color_at(const BitBoard& position) const;
+    [[nodiscard]] std::optional<PieceType> piece_type_at(const BitBoard& position) const;
+    [[nodiscard]] std::optional<PieceColor> piece_color_at(const BitBoard& position) const;
     void clear_pieces(BitBoard board);
-    void set_pieces(const Piece& piece, BitBoard positions);
+    void set_pieces(Piece piece, BitBoard positions);
     void set_squares_attacked_by(const Position& position);
     void clear_squares_attacked_by(const Position& position);
     void update_after_move(Move move);
@@ -176,7 +171,7 @@ class BoardPieces
     [[nodiscard]] static bool on_black_pawn_start_square(const Position& from);
     [[nodiscard]] static bool on_white_pawn_start_square(const Position& from);
     [[nodiscard]] bool on_pawn_start_square(const Position& from) const;
-    void remove_if_color(BitBoard& moves, const PieceColor& color) const;
+    void remove_if_color(BitBoard& moves, std::optional<PieceColor> color) const;
 
     std::vector<Move> moves_;
     std::map<Position, BitBoard> attacked_by_;

@@ -69,9 +69,6 @@ struct fmt::formatter<chess::Piece> : fmt::formatter<std::string>
 {
     auto format(chess::Piece piece, format_context& ctx) -> decltype(ctx.out())
     {
-        if (piece == chess::null_piece) {
-            return format_to(ctx.out(), "null_piece");
-        }
         return format_to(
             ctx.out(), "{} {}", chess::piece_color_names.at(piece.color), chess::piece_type_names.at(piece.type)
         );
@@ -315,10 +312,12 @@ class ChessApplication
         for (int col = 0; col < board_display_.grid_size.x; ++col) {
             for (int row = 0; row < board_display_.grid_size.y; ++row) {
                 const auto coord = Position{row, col};
-                if (!pieces_.occupied(coord)) {
+
+                const auto piece = pieces_.piece_at(coord);
+                if (!piece.has_value()) {
                     continue;
                 }
-                const auto piece_rect = pieces_sprite_map_.get_region(pieces_.piece_at(coord));
+                const auto piece_rect = pieces_sprite_map_.get_region(*piece);
                 const auto piece_position = board_display_.grid_cell_position(transform_chess_to_grid_view(coord));
                 const auto piece_size = board_display_.cell_size();
                 const auto screen_rect =
