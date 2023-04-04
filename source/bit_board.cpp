@@ -213,25 +213,20 @@ BitBoard& BitBoard::shift_assign(const BitBoard::Position relative_offset)
     return *this;
 }
 
-BitBoard::Bits BitBoard::position_mask(const Position& position)
-{
-    return make_from_position(position).bits_;
-}
-
-BitBoard BitBoard::make_from_position(const Position& position)
+BitBoard BitBoard::from_position(const Position& position)
 {
     return BitBoard::make_top_left().shift_assign<down>(position.x()).shift_assign<right>(position.y());
 }
 
 BitBoard BitBoard::neighbors_cardinal(const Position& position)
 {
-    auto board = BitBoard::make_from_position(position);
+    auto board = BitBoard{position};
     return shift<right>(board) | shift<up>(board) | shift<left>(board) | shift<down>(board);
 }
 
 BitBoard BitBoard::neighbors_diagonal(const Position& position)
 {
-    auto board = BitBoard::make_from_position(position);
+    auto board = BitBoard{position};
     return shift<upright>(board) | shift<upleft>(board) | shift<downleft>(board) | shift<downright>(board);
 }
 

@@ -32,7 +32,7 @@ class BitBoard
     constexpr BitBoard() : BitBoard(0) {}
     constexpr BitBoard(const Bits bits) : bits_(bits) {}
     constexpr BitBoard(const std::bitset<n_bits> bits) : bits_(bits.to_ullong()) {}
-    constexpr BitBoard(const Position& position) : bits_(position_mask(position)) {}
+    constexpr BitBoard(const Position& position) : BitBoard(from_position(position)) {}
 
     constexpr BitBoard(const BitBoard& other) = default;
     constexpr BitBoard& operator=(const BitBoard&) = default;
@@ -115,8 +115,6 @@ class BitBoard
         return ~BitBoard{};
     }
 
-    static BitBoard make_from_position(const Position& position);
-
     template <Direction D>
     [[nodiscard]] static BitBoard shift(BitBoard board, size_t n = 1)
     {
@@ -131,7 +129,7 @@ class BitBoard
 
     [[nodiscard]] bool test(const Position& position) const
     {
-        return test_any(BitBoard::make_from_position(position));
+        return test_any(BitBoard{position});
     }
 
     [[nodiscard]] bool test_any(const BitBoard& other) const
@@ -162,7 +160,7 @@ class BitBoard
 
     BitBoard& set(const Position& position)
     {
-        return set(BitBoard::make_from_position(position));
+        return set(BitBoard{position});
     }
 
     BitBoard& reset(const BitBoard& other)
@@ -173,7 +171,7 @@ class BitBoard
 
     BitBoard& reset(const Position& position)
     {
-        return reset(BitBoard::make_from_position(position));
+        return reset(BitBoard{position});
     }
 
     BitBoard& reset_all()
@@ -304,5 +302,5 @@ class BitBoard
     static constexpr Bits negative_slope = 0b10000000'01000000'00100000'00010000'00001000'00000100'00000010'00000001;
     static constexpr Bits positive_slope = 0b00000001'00000010'00000100'00001000'00010000'00100000'01000000'10000000;
 
-    static Bits position_mask(const Position& position);
+    static BitBoard from_position(const Position& position);
 };
