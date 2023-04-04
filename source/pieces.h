@@ -116,8 +116,16 @@ class BoardPieces
     inline static const Position white_kingside_rook_position{7, 7};
 
     [[nodiscard]] bool occupied(BitBoard position) const;
-    [[nodiscard]] std::optional<PieceType> piece_type_at(const BitBoard& position) const;
-    [[nodiscard]] std::optional<PieceColor> piece_color_at(const BitBoard& position) const;
+    [[nodiscard]] std::optional<PieceType> piece_type_at(BitBoard position) const;
+    [[nodiscard]] bool is_pawn(BitBoard position) const;
+    [[nodiscard]] bool is_knight(BitBoard position) const;
+    [[nodiscard]] bool is_bishop(BitBoard position) const;
+    [[nodiscard]] bool is_rook(BitBoard position) const;
+    [[nodiscard]] bool is_queen(BitBoard position) const;
+    [[nodiscard]] bool is_king(BitBoard position) const;
+    [[nodiscard]] std::optional<PieceColor> piece_color_at(BitBoard position) const;
+    [[nodiscard]] bool is_black(BitBoard position) const;
+    [[nodiscard]] bool is_white(BitBoard position) const;
     void clear_pieces(BitBoard board);
     void set_pieces(Piece piece, BitBoard positions);
     void set_squares_attacked_by(const Position& position);
@@ -135,38 +143,13 @@ class BoardPieces
     [[nodiscard]] BitBoard valid_moves_bitboard(const Position& from) const;
 
     template <Direction D>
-    [[nodiscard]] BitBoard sliding_moves(const Position& from, const size_t range = BitBoard::board_size) const
-    {
-        BitBoard candidates{from};
-        BitBoard prev_candidates{candidates};
-        for (size_t distance = 0; !candidates.on_edge<D>() && distance < range; ++distance) {
-            prev_candidates = candidates;
-            candidates.dilate<D>();
-
-            const BitBoard candidate{prev_candidates ^ candidates};
-            if (occupied(candidate)) {
-                if (piece_color_at(from) == piece_color_at(candidate)) {
-                    candidates.reset(candidate);
-                }
-                break;
-            }
-        }
-        return candidates.reset(from);
-    }
-
+    [[nodiscard]] BitBoard sliding_moves(const Position& from, const size_t range = BitBoard::board_size) const;
     [[nodiscard]] BitBoard
     sliding_moves(const Position& from, Direction direction, size_t range = BitBoard::board_size) const;
 
     template <typename DirectionRange>
     [[nodiscard]] BitBoard
-    sliding_moves(const Position& from, DirectionRange&& directions, size_t range = BitBoard::board_size) const
-    {
-        BitBoard moves;
-        for (const auto direction : std::forward<DirectionRange>(directions)) {
-            moves.set(sliding_moves(from, direction, range));
-        }
-        return moves.reset(from);
-    }
+    sliding_moves(const Position& from, DirectionRange&& directions, size_t range = BitBoard::board_size) const;
 
     [[nodiscard]] static bool on_black_pawn_start_square(const Position& from);
     [[nodiscard]] static bool on_white_pawn_start_square(const Position& from);
@@ -190,5 +173,35 @@ class BoardPieces
     bool white_queenside_castle_piece_moved_{false};
     bool white_kingside_castle_piece_moved_{false};
 };
+
+template <Direction D>
+[[nodiscard]] BitBoard BoardPieces::sliding_moves(const Position& from, const size_t range) const
+{
+    BitBoard candidates{from};
+    BitBoard prev_candidates{candidates};
+    for (size_t distance = 0; !candidates.on_edge<D>() && distance < range; ++distance) {
+        prev_candidates = candidates;
+        candidates.dilate<D>();
+
+        const BitBoard candidate{prev_candidates ^ candidates};
+        if (occupied(candidate)) {
+            if (piece_color_at(from) == piece_color_at(candidate)) {
+                candidates.reset(candidate);
+            }
+            break;
+        }
+    }
+    return candidates.reset(from);
+}
+
+template <typename DirectionRange>
+[[nodiscard]] BitBoard BoardPieces::sliding_moves(const Position& from, DirectionRange&& directions, size_t range) const
+{
+    BitBoard moves;
+    for (const auto direction : std::forward<DirectionRange>(directions)) {
+        moves.set(sliding_moves(from, direction, range));
+    }
+    return moves.reset(from);
+}
 
 } // namespace chess

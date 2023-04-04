@@ -176,7 +176,8 @@ class BitBoard
 
     BitBoard& reset_all()
     {
-        return reset(BitBoard::make_full());
+        bits_ = 0U;
+        return *this;
     }
 
     template <Direction D>

@@ -171,7 +171,7 @@ void BoardPieces::clear_all()
     return piece_color_at(BitBoard{position});
 }
 
-[[nodiscard]] std::optional<PieceColor> BoardPieces::piece_color_at(const BitBoard& position) const
+[[nodiscard]] std::optional<PieceColor> BoardPieces::piece_color_at(const BitBoard position) const
 {
     if (!occupied(position)) {
         return {};
@@ -190,7 +190,37 @@ void BoardPieces::clear_all()
     return piece_type_at(BitBoard{position});
 }
 
-[[nodiscard]] std::optional<PieceType> BoardPieces::piece_type_at(const BitBoard& position) const
+[[nodiscard]] bool BoardPieces::is_pawn(const BitBoard position) const
+{
+    return pawns_.test_all(position);
+}
+
+[[nodiscard]] bool BoardPieces::is_knight(const BitBoard position) const
+{
+    return knights_.test_all(position);
+}
+
+[[nodiscard]] bool BoardPieces::is_bishop(const BitBoard position) const
+{
+    return bishops_.test_all(position);
+}
+
+[[nodiscard]] bool BoardPieces::is_rook(const BitBoard position) const
+{
+    return rooks_.test_all(position);
+}
+
+[[nodiscard]] bool BoardPieces::is_queen(const BitBoard position) const
+{
+    return queens_.test_all(position);
+}
+
+[[nodiscard]] bool BoardPieces::is_king(const BitBoard position) const
+{
+    return kings_.test_all(position);
+}
+
+[[nodiscard]] std::optional<PieceType> BoardPieces::piece_type_at(const BitBoard position) const
 {
     if (pawns_.test_all(position)) {
         return PieceType::pawn;
