@@ -110,7 +110,21 @@ class BitBoard
         return negative_slope;
     }
 
+    static BitBoard make_full()
+    {
+        return ~BitBoard{};
+    }
+
     static BitBoard make_from_position(const Position& position);
+
+    template <Direction D>
+    [[nodiscard]] static BitBoard shift(BitBoard board, size_t n = 1)
+    {
+        return board.shift_assign<D>(n);
+    }
+
+    [[nodiscard]] static BitBoard shift(BitBoard board, Direction direction, size_t n = 1);
+
     static BitBoard neighbors_cardinal(const Position& position);
     static BitBoard neighbors_diagonal(const Position& position);
     static BitBoard neighbors_cardinal_and_diagonal(const Position& position);
@@ -176,16 +190,23 @@ class BitBoard
 
     BitBoard& shift_assign(Position relative_offset);
 
+    /*
     template <Direction D>
-    [[nodiscard]] BitBoard shift(size_t n = 1) const;
+    [[nodiscard]] BitBoard shift(size_t n = 1) const
+    {
+        BitBoard shifted{*this};
+        shifted.shift_assign<D>(n);
+        return shifted;
+    }
 
     [[nodiscard]] BitBoard shift(Direction direction, size_t n = 1) const;
+    */
 
     template <Direction D>
     BitBoard& dilate(const size_t n = 1)
     {
         for (size_t i = 0; i < n; i++) {
-            *this |= shift<D>(n);
+            *this |= BitBoard::shift<D>(*this);
         }
         return *this;
     }
@@ -207,7 +228,7 @@ class BitBoard
     }
     bool operator!=(const BitBoard& other) const
     {
-        return bits_ != other.bits_;
+        return !(*this == other);
     }
     BitBoard& operator<<=(size_t n)
     {
@@ -216,7 +237,7 @@ class BitBoard
     }
     BitBoard operator<<(size_t n) const
     {
-        return BitBoard{bits_ << n};
+        return BitBoard{*this} <<= n;
     }
     BitBoard& operator>>=(size_t n)
     {
@@ -225,7 +246,7 @@ class BitBoard
     }
     BitBoard operator>>(size_t n) const
     {
-        return BitBoard{bits_ >> n};
+        return BitBoard{*this} >>= n;
     }
     BitBoard& operator|=(const BitBoard& other)
     {
@@ -234,7 +255,7 @@ class BitBoard
     }
     BitBoard operator|(const BitBoard& other) const
     {
-        return BitBoard{bits_ | other.bits_};
+        return BitBoard{*this} |= other;
     }
     BitBoard& operator&=(const BitBoard& other)
     {
@@ -243,7 +264,7 @@ class BitBoard
     }
     BitBoard operator&(const BitBoard& other) const
     {
-        return BitBoard{bits_ & other.bits_};
+        return BitBoard{*this} &= other;
     }
     BitBoard& operator^=(const BitBoard& other)
     {
@@ -256,7 +277,7 @@ class BitBoard
     }
     BitBoard operator~() const
     {
-        return ~bits_;
+        return BitBoard{~bits_};
     }
 
   private:
@@ -279,9 +300,4 @@ class BitBoard
     static constexpr Bits positive_slope = 0b00000001'00000010'00000100'00001000'00010000'00100000'01000000'10000000;
 
     static Bits position_mask(const Position& position);
-
-    template <Direction D>
-    [[nodiscard]] static BitBoard shift(BitBoard board, size_t n = 1);
-
-    [[nodiscard]] static BitBoard shift(BitBoard board, Direction direction, size_t n = 1);
 };

@@ -182,48 +182,48 @@ TEST(Board, SetBoard)
 
 TEST(BoardStaticShift, ShiftRight)
 {
-    EXPECT_EQ(test_board.shift<Direction::right>(1).to_string(), right_board.to_string());
+    EXPECT_EQ(BitBoard::shift<Direction::right>(test_board).to_string(), right_board.to_string());
 }
 
 TEST(BoardStaticShift, ShiftUpRight)
 {
-    EXPECT_EQ(test_board.shift<Direction::upright>(1).to_string(), upright_board.to_string());
+    EXPECT_EQ(BitBoard::shift<Direction::upright>(test_board).to_string(), upright_board.to_string());
 }
 
 TEST(BoardStaticShift, ShiftUp)
 {
-    EXPECT_EQ(test_board.shift<Direction::up>(1).to_string(), up_board.to_string());
+    EXPECT_EQ(BitBoard::shift<Direction::up>(test_board).to_string(), up_board.to_string());
 }
 
 TEST(BoardStaticShift, ShiftUpLeft)
 {
-    EXPECT_EQ(test_board.shift<Direction::upleft>(1).to_string(), upleft_board.to_string());
+    EXPECT_EQ(BitBoard::shift<Direction::upleft>(test_board).to_string(), upleft_board.to_string());
 }
 
 TEST(BoardStaticShift, ShiftLeft)
 {
-    EXPECT_EQ(test_board.shift<Direction::left>(1).to_string(), left_board.to_string());
+    EXPECT_EQ(BitBoard::shift<Direction::left>(test_board).to_string(), left_board.to_string());
 }
 
 TEST(BoardStaticShift, ShiftDownLeft)
 {
-    EXPECT_EQ(test_board.shift<Direction::downleft>(1).to_string(), downleft_board.to_string());
+    EXPECT_EQ(BitBoard::shift<Direction::downleft>(test_board).to_string(), downleft_board.to_string());
 }
 
 TEST(BoardStaticShift, ShiftDown)
 {
-    EXPECT_EQ(test_board.shift<Direction::down>(1).to_string(), down_board.to_string());
+    EXPECT_EQ(BitBoard::shift<Direction::down>(test_board).to_string(), down_board.to_string());
 }
 
 TEST(BoardStaticShift, ShiftDownRight)
 {
-    EXPECT_EQ(test_board.shift<Direction::downright>(1).to_string(), downright_board.to_string());
+    EXPECT_EQ(BitBoard::shift<Direction::downright>(test_board).to_string(), downright_board.to_string());
 }
 
 TEST(BoardStaticShift, ShiftRightN)
 {
     EXPECT_EQ(
-        test_board.shift<Direction::right>(5).to_string(),
+        BitBoard::shift<Direction::right>(test_board, 5).to_string(),
         "00000101"
         "00000010"
         "00000101"
@@ -238,7 +238,7 @@ TEST(BoardStaticShift, ShiftRightN)
 TEST(BoardStaticShift, ShiftUpRightN)
 {
     EXPECT_EQ(
-        test_board.shift<Direction::upright>(5).to_string(),
+        BitBoard::shift<Direction::upright>(test_board, 5).to_string(),
         "00000010"
         "00000101"
         "00000010"
@@ -253,7 +253,7 @@ TEST(BoardStaticShift, ShiftUpRightN)
 TEST(BoardStaticShift, ShiftUpN)
 {
     EXPECT_EQ(
-        test_board.shift<Direction::up>(5).to_string(),
+        BitBoard::shift<Direction::up>(test_board, 5).to_string(),
         "01010101"
         "10101010"
         "01010101"
@@ -268,7 +268,7 @@ TEST(BoardStaticShift, ShiftUpN)
 TEST(BoardStaticShift, ShiftUpLeftN)
 {
     EXPECT_EQ(
-        test_board.shift<Direction::upleft>(5).to_string(),
+        BitBoard::shift<Direction::upleft>(test_board, 5).to_string(),
         "10100000"
         "01000000"
         "10100000"
@@ -283,7 +283,7 @@ TEST(BoardStaticShift, ShiftUpLeftN)
 TEST(BoardStaticShift, ShiftLeftN)
 {
     EXPECT_EQ(
-        test_board.shift<Direction::left>(5).to_string(),
+        BitBoard::shift<Direction::left>(test_board, 5).to_string(),
         "01000000"
         "10100000"
         "01000000"
@@ -298,7 +298,7 @@ TEST(BoardStaticShift, ShiftLeftN)
 TEST(BoardStaticShift, ShiftDownLeftN)
 {
     EXPECT_EQ(
-        test_board.shift<Direction::downleft>(5).to_string(),
+        BitBoard::shift<Direction::downleft>(test_board, 5).to_string(),
         "00000000"
         "00000000"
         "00000000"
@@ -313,7 +313,7 @@ TEST(BoardStaticShift, ShiftDownLeftN)
 TEST(BoardStaticShift, ShiftDownN)
 {
     EXPECT_EQ(
-        test_board.shift<Direction::down>(5).to_string(),
+        BitBoard::shift<Direction::down>(test_board, 5).to_string(),
         "00000000"
         "00000000"
         "00000000"
@@ -328,7 +328,7 @@ TEST(BoardStaticShift, ShiftDownN)
 TEST(BoardStaticShift, ShiftDownRightN)
 {
     EXPECT_EQ(
-        test_board.shift<Direction::downright>(5).to_string(),
+        BitBoard::shift<Direction::downright>(test_board, 5).to_string(),
         "00000000"
         "00000000"
         "00000000"
@@ -354,7 +354,7 @@ TEST(BoardDynamicShift, ShiftAll)
     };
 
     for (const auto [direction, expected] : shifted_board_bits) {
-        BitBoard shifted{test_board.shift(direction, 1)};
+        const auto shifted = BitBoard::shift(test_board, direction, 1);
         EXPECT_EQ(shifted.to_string(), expected.to_string());
     }
 }

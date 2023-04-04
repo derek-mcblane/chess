@@ -82,91 +82,18 @@ bool BitBoard::on_any_edge() const
     return test_any(all_edge);
 }
 
-template <>
-BitBoard BitBoard::shift<up>(const size_t n) const
+BitBoard BitBoard::shift(BitBoard board, const Direction direction, const size_t n)
 {
-    return bits_ << (board_size * n);
+    return board.shift_assign(direction, n);
 }
-
-template <>
-BitBoard BitBoard::shift<down>(const size_t n) const
-{
-    return bits_ >> (board_size * n);
-}
-
-template <>
-BitBoard BitBoard::shift<right>(const size_t n) const
-{
-    BitBoard shifted{bits_};
-    Bits wall{0};
-    for (size_t i = 0; i < n; i++) {
-        wall |= (left_edge >> i);
-    }
-    shifted >>= n;
-    shifted &= ~wall;
-    return shifted;
-}
-
-template <>
-BitBoard BitBoard::shift<left>(const size_t n) const
-{
-    BitBoard shifted{bits_};
-    Bits wall{0};
-    for (size_t i = 0; i < n; i++) {
-        wall |= (right_edge << i);
-    }
-    shifted <<= n;
-    shifted &= ~wall;
-    return shifted;
-}
-
-template <>
-BitBoard BitBoard::shift<upright>(const size_t n) const
-{
-    return shift<up>(n).shift<right>(n);
-}
-
-template <>
-BitBoard BitBoard::shift<upleft>(const size_t n) const
-{
-    return shift<up>(n).shift<left>(n);
-}
-
-template <>
-BitBoard BitBoard::shift<downleft>(const size_t n) const
-{
-    return shift<down>(n).shift<left>(n);
-}
-
-template <>
-BitBoard BitBoard::shift<downright>(const size_t n) const
-{
-    return shift<down>(n).shift<right>(n);
-}
-
+/*
 BitBoard BitBoard::shift(const Direction direction, const size_t n) const
 {
-    switch (direction) {
-    case right:
-        return shift<right>(n);
-    case upright:
-        return shift<upright>(n);
-    case up:
-        return shift<up>(n);
-    case upleft:
-        return shift<upleft>(n);
-    case left:
-        return shift<left>(n);
-    case downleft:
-        return shift<downleft>(n);
-    case down:
-        return shift<down>(n);
-    case downright:
-        return shift<downright>(n);
-    }
-    assert(!"invalid direction");
-    return {};
+    BitBoard shifted{*this};
+    shifted.shift_assign(direction, n);
+    return shifted;
 }
+*/
 
 BitBoard& BitBoard::dilate(const Direction direction, const size_t n)
 {
@@ -293,19 +220,19 @@ BitBoard::Bits BitBoard::position_mask(const Position& position)
 
 BitBoard BitBoard::make_from_position(const Position& position)
 {
-    return BitBoard::make_top_left().shift<down>(position.x()).shift<right>(position.y());
+    return BitBoard::make_top_left().shift_assign<down>(position.x()).shift_assign<right>(position.y());
 }
 
 BitBoard BitBoard::neighbors_cardinal(const Position& position)
 {
     auto board = BitBoard::make_from_position(position);
-    return board.shift<right>() | board.shift<up>() | board.shift<left>() | board.shift<down>();
+    return shift<right>(board) | shift<up>(board) | shift<left>(board) | shift<down>(board);
 }
 
 BitBoard BitBoard::neighbors_diagonal(const Position& position)
 {
     auto board = BitBoard::make_from_position(position);
-    return board.shift<upright>() | board.shift<upleft>() | board.shift<downleft>() | board.shift<downright>();
+    return shift<upright>(board) | shift<upleft>(board) | shift<downleft>(board) | shift<downright>(board);
 }
 
 BitBoard BitBoard::neighbors_cardinal_and_diagonal(const Position& position)
