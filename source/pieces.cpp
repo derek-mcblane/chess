@@ -86,12 +86,12 @@ void BoardPieces::set_pieces(const Piece& piece, const BitBoard positions)
 void BoardPieces::clear_piece(const Position& position)
 {
     clear_squares_attacked_by(position);
-    clear_pieces(BitBoard::make_from_position(position));
+    clear_pieces(position);
 }
 
 void BoardPieces::set_piece(const Piece& piece, const Position& position)
 {
-    set_pieces(piece, BitBoard::make_from_position(position));
+    set_pieces(piece, position);
     set_squares_attacked_by(position);
 }
 
@@ -170,7 +170,7 @@ void BoardPieces::clear_all()
 
 [[nodiscard]] bool BoardPieces::occupied(const Position& position) const
 {
-    return occupied(BitBoard::make_from_position(position));
+    return occupied(BitBoard{position});
 }
 
 [[nodiscard]] bool BoardPieces::occupied(const BitBoard position) const
@@ -180,7 +180,7 @@ void BoardPieces::clear_all()
 
 [[nodiscard]] PieceColor BoardPieces::piece_color_at(const Position& position) const
 {
-    return piece_color_at(BitBoard::make_from_position(position));
+    return piece_color_at(BitBoard{position});
 }
 
 [[nodiscard]] PieceColor BoardPieces::piece_color_at(const BitBoard& position) const
@@ -267,7 +267,7 @@ bool BoardPieces::on_pawn_start_square(const Position& from) const
 [[nodiscard]] BitBoard BoardPieces::pawn_moves(const Position& from) const
 {
     const auto color = piece_color_at(from);
-    const auto from_board = BitBoard::make_from_position(from);
+    const auto from_board = BitBoard{from};
     BitBoard moves;
     BitBoard attacking_moves;
     auto n_spaces = on_pawn_start_square(from) ? 2 : 1;
