@@ -3,6 +3,7 @@
 
 #include <cassert>
 #include <map>
+#include <optional>
 
 namespace chess {
 
@@ -86,13 +87,15 @@ class BoardPieces
     void set_piece(Piece piece, const Position& position);
     void move_piece(const Position& from, const Position& to);
     void clear_piece(const Position& position);
-    void clear_all();
+    [[nodiscard]] BitBoard occupied_board() const;
     [[nodiscard]] bool occupied(const Position& position) const;
     [[nodiscard]] std::optional<PieceColor> piece_color_at(const Position& position) const;
     [[nodiscard]] std::optional<PieceType> piece_type_at(const Position& position) const;
     [[nodiscard]] std::optional<Piece> piece_at(const Position& position) const;
     [[nodiscard]] bool is_valid_move(const Position& from, const Position& to);
     [[nodiscard]] BitBoard valid_moves(const Position& from);
+    [[nodiscard]] PieceColor active_color() const;
+    [[nodiscard]] bool is_active_piece(const Position& position) const;
 
     [[nodiscard]] static BoardPieces make_standard_setup_board();
 
@@ -130,7 +133,6 @@ class BoardPieces
     void set_pieces(Piece piece, BitBoard positions);
     void set_squares_attacked_by(const Position& position);
     void clear_squares_attacked_by(const Position& position);
-    void update_after_move(Move move);
     void update_en_passant_state(Move move);
     void update_castling_state(Move move);
 
@@ -143,7 +145,7 @@ class BoardPieces
     [[nodiscard]] BitBoard valid_moves_bitboard(const Position& from) const;
 
     template <Direction D>
-    [[nodiscard]] BitBoard sliding_moves(const Position& from, const size_t range = BitBoard::board_size) const;
+    [[nodiscard]] BitBoard sliding_moves(const Position& from, size_t range = BitBoard::board_size) const;
     [[nodiscard]] BitBoard
     sliding_moves(const Position& from, Direction direction, size_t range = BitBoard::board_size) const;
 
@@ -151,21 +153,22 @@ class BoardPieces
     [[nodiscard]] BitBoard
     sliding_moves(const Position& from, DirectionRange&& directions, size_t range = BitBoard::board_size) const;
 
-    [[nodiscard]] static bool on_black_pawn_start_square(const Position& from);
-    [[nodiscard]] static bool on_white_pawn_start_square(const Position& from);
     [[nodiscard]] bool on_pawn_start_square(const Position& from) const;
-    void remove_if_color(BitBoard& moves, std::optional<PieceColor> color) const;
+    void remove_if_color(BitBoard& moves, PieceColor color) const;
+    [[nodiscard]] BitBoard active_color_board() const;
+    [[nodiscard]] BitBoard& active_color_board();
 
-    std::vector<Move> moves_;
+    std::vector<Move> move_history_;
     std::map<Position, BitBoard> attacked_by_;
-    BitBoard black_;
-    BitBoard white_;
     BitBoard pawns_;
     BitBoard knights_;
     BitBoard bishops_;
     BitBoard rooks_;
     BitBoard queens_;
     BitBoard kings_;
+    BitBoard black_;
+    BitBoard white_;
+    PieceColor active_color_{PieceColor::white};
     BitBoard occupied_;
     BitBoard en_passant_square_;
     bool black_queenside_castle_piece_moved_{false};
@@ -186,12 +189,12 @@ template <Direction D>
         const BitBoard candidate{prev_candidates ^ candidates};
         if (occupied(candidate)) {
             if (piece_color_at(from) == piece_color_at(candidate)) {
-                candidates.reset(candidate);
+                candidates.clear(candidate);
             }
             break;
         }
     }
-    return candidates.reset(from);
+    return candidates.clear(from);
 }
 
 template <typename DirectionRange>
@@ -201,7 +204,7 @@ template <typename DirectionRange>
     for (const auto direction : std::forward<DirectionRange>(directions)) {
         moves.set(sliding_moves(from, direction, range));
     }
-    return moves.reset(from);
+    return moves.clear(from);
 }
 
 } // namespace chess

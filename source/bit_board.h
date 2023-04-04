@@ -163,15 +163,15 @@ class BitBoard
         return set(BitBoard{position});
     }
 
-    BitBoard& reset(const BitBoard& other)
+    BitBoard& clear(const BitBoard& other)
     {
         *this &= ~other;
         return *this;
     }
 
-    BitBoard& reset(const Position& position)
+    BitBoard& clear(const Position& position)
     {
-        return reset(BitBoard{position});
+        return clear(BitBoard{position});
     }
 
     BitBoard& reset_all()
@@ -193,18 +193,6 @@ class BitBoard
     BitBoard& shift_assign(Direction direction, size_t n = 1);
 
     BitBoard& shift_assign(Position relative_offset);
-
-    /*
-    template <Direction D>
-    [[nodiscard]] BitBoard shift(size_t n = 1) const
-    {
-        BitBoard shifted{*this};
-        shifted.shift_assign<D>(n);
-        return shifted;
-    }
-
-    [[nodiscard]] BitBoard shift(Direction direction, size_t n = 1) const;
-    */
 
     template <Direction D>
     BitBoard& dilate(const size_t n = 1)

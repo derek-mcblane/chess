@@ -86,14 +86,6 @@ BitBoard BitBoard::shift(BitBoard board, const Direction direction, const size_t
 {
     return board.shift_assign(direction, n);
 }
-/*
-BitBoard BitBoard::shift(const Direction direction, const size_t n) const
-{
-    BitBoard shifted{*this};
-    shifted.shift_assign(direction, n);
-    return shifted;
-}
-*/
 
 BitBoard& BitBoard::dilate(const Direction direction, const size_t n)
 {

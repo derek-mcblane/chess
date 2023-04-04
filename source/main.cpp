@@ -208,7 +208,7 @@ class ChessApplication
             selected_piece_coordinate_ = std::nullopt;
             selected_piece_valid_moves_ = std::nullopt;
         } else {
-            if (pieces_.occupied(coord)) {
+            if (pieces_.is_active_piece(coord)) {
                 selected_piece_coordinate_ = std::optional{coord};
                 selected_piece_valid_moves_ = pieces_.valid_moves(coord);
             }
