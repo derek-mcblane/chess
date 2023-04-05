@@ -27,7 +27,7 @@ class BitBoard
 
     static constexpr size_t board_size = 8;
     static constexpr size_t n_bits = 64;
-    static_assert(sizeof(Bits) * CHAR_BIT == n_bits);
+    static_assert(sizeof(Bits) * CHAR_BIT == n_bits, "number of bits mismatch");
 
     constexpr BitBoard() : BitBoard(0) {}
     constexpr BitBoard(const Bits bits) : bits_(bits) {}
@@ -132,12 +132,12 @@ class BitBoard
         return test_any(BitBoard{position});
     }
 
-    [[nodiscard]] bool test_any(const BitBoard& other) const
+    [[nodiscard]] bool test_any(const BitBoard other) const
     {
         return !(*this & other).empty();
     }
 
-    [[nodiscard]] bool test_all(const BitBoard& other) const
+    [[nodiscard]] bool test_all(const BitBoard other) const
     {
         return (*this & other) == other;
     }
@@ -152,7 +152,7 @@ class BitBoard
         return std::bitset<n_bits>(bits_).count();
     }
 
-    BitBoard& set(const BitBoard& other)
+    BitBoard& set(const BitBoard other)
     {
         bits_ |= other.bits_;
         return *this;
@@ -163,7 +163,7 @@ class BitBoard
         return set(BitBoard{position});
     }
 
-    BitBoard& clear(const BitBoard& other)
+    BitBoard& clear(const BitBoard other)
     {
         *this &= ~other;
         return *this;
@@ -195,10 +195,16 @@ class BitBoard
     BitBoard& shift_assign(Position relative_offset);
 
     template <Direction D>
-    BitBoard& dilate(const size_t n = 1)
+    BitBoard& dilate()
+    {
+        return *this |= BitBoard::shift<D>(*this);
+    }
+
+    template <Direction D>
+    BitBoard& dilate(const size_t n)
     {
         for (size_t i = 0; i < n; i++) {
-            *this |= BitBoard::shift<D>(*this);
+            dilate<D>();
         }
         return *this;
     }
@@ -214,11 +220,11 @@ class BitBoard
         return std::bitset<n_bits>(bits_).to_string();
     }
 
-    bool operator==(const BitBoard& other) const
+    bool operator==(const BitBoard other) const
     {
         return bits_ == other.bits_;
     }
-    bool operator!=(const BitBoard& other) const
+    bool operator!=(const BitBoard other) const
     {
         return !(*this == other);
     }
@@ -240,30 +246,30 @@ class BitBoard
     {
         return BitBoard{*this} >>= n;
     }
-    BitBoard& operator|=(const BitBoard& other)
+    BitBoard& operator|=(const BitBoard other)
     {
         bits_ |= other.bits_;
         return *this;
     }
-    BitBoard operator|(const BitBoard& other) const
+    BitBoard operator|(const BitBoard other) const
     {
         return BitBoard{*this} |= other;
     }
-    BitBoard& operator&=(const BitBoard& other)
+    BitBoard& operator&=(const BitBoard other)
     {
         bits_ &= other.bits_;
         return *this;
     }
-    BitBoard operator&(const BitBoard& other) const
+    BitBoard operator&(const BitBoard other) const
     {
         return BitBoard{*this} &= other;
     }
-    BitBoard& operator^=(const BitBoard& other)
+    BitBoard& operator^=(const BitBoard other)
     {
         bits_ ^= other.bits_;
         return *this;
     }
-    BitBoard operator^(const BitBoard& other) const
+    BitBoard operator^(const BitBoard other) const
     {
         return BitBoard{bits_ ^ other.bits_};
     }

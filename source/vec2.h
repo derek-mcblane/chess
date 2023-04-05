@@ -121,13 +121,9 @@ class Vec2
         return x() * x() + y() * y();
     }
 
-    [[nodiscard]] constexpr T magnitude() const noexcept
+    [[nodiscard]] constexpr double magnitude() const noexcept
     {
-        if constexpr (std::is_integral_v<T>) {
-            return std::llround(std::sqrt(magnitude_squared()));
-        } else {
-            return std::sqrt(magnitude_squared());
-        }
+        return std::sqrt(magnitude_squared());
     }
 
     constexpr Vec2<T>& normalize() noexcept
@@ -201,11 +197,7 @@ class Vec2
 
     [[nodiscard]] static constexpr T abs_difference(T lhs, T rhs) noexcept
     {
-        if constexpr (std::is_signed_v<T>) {
-            return std::abs(lhs - rhs);
-        } else {
-            return std::max(lhs, rhs) - std::min(lhs, rhs);
-        }
+        return std::max(lhs, rhs) - std::min(lhs, rhs);
     }
 
     [[nodiscard]] static constexpr T abs_difference_x(const Vec2<T>& lhs, const Vec2<T>& rhs) noexcept

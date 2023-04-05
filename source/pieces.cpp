@@ -72,14 +72,12 @@ void BoardPieces::set_pieces(const Piece piece, const BitBoard positions)
 
 void BoardPieces::clear_piece(const Position& position)
 {
-    clear_squares_attacked_by(position);
     clear_pieces(position);
 }
 
 void BoardPieces::set_piece(const Piece piece, const Position& position)
 {
     set_pieces(piece, position);
-    set_squares_attacked_by(position);
 }
 
 void BoardPieces::update_en_passant_state(const Move move)
@@ -116,42 +114,56 @@ void BoardPieces::update_castling_state(const Move move)
     }
 }
 
-void BoardPieces::move_piece(const Position& from, const Position& to)
+void BoardPieces::move_piece(const Position from, const Position to)
 {
     assert(from != to && "move `from == to`");
     const auto piece = piece_at(from);
-    if (!piece.has_value()) {
-        throw std::runtime_error("move from empty square");
-    }
+    assert(piece.has_value() && "move from empty square");
     const auto move = Move{*piece, from, to};
 
     if (move.piece.type == PieceType::pawn && en_passant_square_.test(move.to)) {
         clear_piece({move.from.x(), move.to.y()});
     }
 
+    if (move.piece.type == PieceType::king && king_castling_moves(move.from).test(move.to)) {
+        const auto move_delta = move.to - move.from;
+        Position castle_from{black_queenside_rook_position};
+        Position castle_to;
+        if (move_delta.y() > 0) {
+            castle_from = Position{from.x(), kingside_rook_col};
+            castle_to = Position{from.x(), kingside_rook_col - 2};
+        } else {
+            castle_from = Position{from.x(), queenside_rook_col};
+            castle_to = Position{from.x(), queenside_rook_col + 3};
+        }
+        const auto rook = piece_at(castle_from);
+        assert(rook.has_value());
+        set_piece(*rook, castle_to);
+        clear_piece(castle_from);
+    }
+
     set_piece(move.piece, move.to);
     clear_piece(move.from);
+    active_color_ = opposite_color(active_color_);
 
     update_en_passant_state(move);
     update_castling_state(move);
-    active_color_ = opposite_color(active_color_);
     move_history_.push_back(move);
 }
 
 void BoardPieces::clear_squares_attacked_by(const Position& position)
 {
     assert(occupied(position) && "square not occupied");
-    for (const auto attacked_square : valid_moves_bitboard(position).to_position_vector()) {
-        attacked_by_[attacked_square].clear(position);
-    }
 }
 
 void BoardPieces::set_squares_attacked_by(const Position& position)
 {
     assert(occupied(position) && "square not occupied");
-    for (const auto attacked_square : valid_moves_bitboard(position).to_position_vector()) {
-        attacked_by_[attacked_square].set(position);
-    }
+}
+
+[[nodiscard]] BitBoard BoardPieces::attacked_board() const
+{
+    return attacked_;
 }
 
 [[nodiscard]] BitBoard BoardPieces::occupied_board() const
@@ -263,12 +275,49 @@ void BoardPieces::set_squares_attacked_by(const Position& position)
     return Piece{.color = *piece_color, .type = *piece_type};
 }
 
-[[nodiscard]] bool BoardPieces::is_valid_move(const Position& from, const Position& to)
+//todo: update color boards
+void BoardPieces::move_pawn(const BitBoard from, const BitBoard to)
+{
+    pawns_.set(to);
+    pawns_.clear(from);
+}
+
+void BoardPieces::move_knight(const BitBoard from, const BitBoard to)
+{
+    knights_.set(to);
+    knights_.clear(from);
+}
+
+void BoardPieces::move_bishop(const BitBoard from, const BitBoard to)
+{
+    bishops_.set(to);
+    bishops_.clear(from);
+}
+
+void BoardPieces::move_rook(const BitBoard from, const BitBoard to)
+{
+    rooks_.set(to);
+    rooks_.clear(from);
+}
+
+void BoardPieces::move_queen(const BitBoard from, const BitBoard to)
+{
+    queens_.set(to);
+    queens_.clear(from);
+}
+
+void BoardPieces::move_king(const BitBoard from, const BitBoard to)
+{
+    kings_.set(to);
+    kings_.clear(from);
+}
+
+[[nodiscard]] bool BoardPieces::is_valid_move(const Position from, const Position to)
 {
     return valid_moves_bitboard(from).test(to);
 }
 
-[[nodiscard]] BitBoard BoardPieces::valid_moves(const Position& from)
+[[nodiscard]] BitBoard BoardPieces::valid_moves(const Position from)
 {
     return valid_moves_bitboard(from);
 }
@@ -283,38 +332,35 @@ void BoardPieces::set_squares_attacked_by(const Position& position)
     return active_color_board().test(position);
 }
 
-bool BoardPieces::on_pawn_start_square(const Position& from) const
+bool BoardPieces::is_pawn_start_square(const Position from) const
 {
     const auto pawn_row = piece_color_at(from) == PieceColor::black ? black_pawn_row : white_pawn_row;
     return from.x() == pawn_row;
 }
 
-[[nodiscard]] BitBoard BoardPieces::pawn_moves(const Position& from) const
+[[nodiscard]] BitBoard BoardPieces::pawn_moves(const Position from) const
 {
+    assert(is_pawn(from) && "not a pawn");
     const auto from_board = BitBoard{from};
-    const auto n_spaces = on_pawn_start_square(from) ? 2 : 1;
-    BitBoard moves;
+    const auto n_spaces = is_pawn_start_square(from) ? 2 : 1;
+    BitBoard forward_moves;
     BitBoard attacking_moves;
     switch (active_color_) {
     case PieceColor::white:
-        moves = sliding_moves<up>(from, n_spaces);
-        attacking_moves.set(BitBoard::shift<upright>(from_board));
-        attacking_moves.set(BitBoard::shift<upleft>(from_board));
-        attacking_moves.clear(~black_);
-        attacking_moves &= en_passant_square_;
+        forward_moves = sliding_moves<up>(from, n_spaces);
+        attacking_moves = BitBoard::shift<upright>(from_board) | BitBoard::shift<upleft>(from_board);
+        attacking_moves &= (black_ | en_passant_square_);
         break;
     case PieceColor::black:
-        moves = sliding_moves<down>(from, n_spaces);
-        attacking_moves.set(BitBoard::shift<downright>(from_board));
-        attacking_moves.set(BitBoard::shift<downleft>(from_board));
-        attacking_moves.clear(~white_);
+        forward_moves = sliding_moves<down>(from, n_spaces);
+        attacking_moves = BitBoard::shift<downright>(from_board) | BitBoard::shift<downleft>(from_board);
+        attacking_moves &= (white_ | en_passant_square_);
         break;
     }
-    moves.clear(occupied_board());
-    return moves | attacking_moves;
+    return forward_moves | attacking_moves;
 }
 
-[[nodiscard]] BitBoard BoardPieces::knight_moves(const Position& from) const
+[[nodiscard]] BitBoard BoardPieces::knight_moves(const Position from) const
 {
     static const BitBoard knight_moves_board{std::bitset<64>{"01010000"
                                                              "10001000"
@@ -326,27 +372,30 @@ bool BoardPieces::on_pawn_start_square(const Position& from) const
                                                              "00000000"}};
     static const Position knight_moves_origin{2, 2};
 
+    assert(is_knight(from) && "not a knight");
     const Position offset = from - knight_moves_origin;
     auto moves = BitBoard{knight_moves_board}.shift_assign(offset);
     moves.clear(active_color_board());
     return moves;
 }
 
-[[nodiscard]] BitBoard BoardPieces::bishop_moves(const Position& from) const
+[[nodiscard]] BitBoard BoardPieces::bishop_moves(const Position from) const
 {
     static constexpr std::array<Direction, 4> directions = {
         Direction::upright, Direction::upleft, Direction::downleft, Direction::downright};
+    assert(is_bishop(from) && "not a bishop");
     return sliding_moves(from, directions);
 }
 
-[[nodiscard]] BitBoard BoardPieces::rook_moves(const Position& from) const
+[[nodiscard]] BitBoard BoardPieces::rook_moves(const Position from) const
 {
     static constexpr std::array<Direction, 4> directions = {
         Direction::right, Direction::up, Direction::left, Direction::down};
+    assert(is_rook(from) && "not a rook");
     return sliding_moves(from, directions);
 }
 
-[[nodiscard]] BitBoard BoardPieces::queen_moves(const Position& from) const
+[[nodiscard]] BitBoard BoardPieces::queen_moves(const Position from) const
 {
     static constexpr std::array<Direction, 8> directions = {
         Direction::right,
@@ -357,18 +406,46 @@ bool BoardPieces::on_pawn_start_square(const Position& from) const
         Direction::downleft,
         Direction::down,
         Direction::downright};
+    assert(is_queen(from) && "not a queen");
     return sliding_moves(from, directions);
 }
 
-[[nodiscard]] BitBoard BoardPieces::king_moves(const Position& from) const
+[[nodiscard]] BitBoard BoardPieces::king_castling_moves(const Position from) const
 {
-    auto moves = BitBoard::neighbors_cardinal_and_diagonal(from);
-    moves.clear(active_color_board());
-    moves.clear(from);
-    return moves;
+    assert(is_king(from) && "not a king");
+    switch (active_color_) {
+    case PieceColor::white:
+        return king_castling_move<
+                   0b00000000'00000000'00000000'00000000'00000000'00000000'00000000'00000110,
+                   0b00000000'00000000'00000000'00000000'00000000'00000000'00000000'00000110,
+                   0b00000000'00000000'00000000'00000000'00000000'00000000'00000000'00000010>(from) |
+               king_castling_move<
+                   0b00000000'00000000'00000000'00000000'00000000'00000000'00000000'01110000,
+                   0b00000000'00000000'00000000'00000000'00000000'00000000'00000000'01100000,
+                   0b00000000'00000000'00000000'00000000'00000000'00000000'00000000'00100000>(from);
+        break;
+    case PieceColor::black:
+        return king_castling_move<
+                   0b00000110'00000000'00000000'00000000'00000000'00000000'00000000'00000000,
+                   0b00000110'00000000'00000000'00000000'00000000'00000000'00000000'00000000,
+                   0b00000010'00000000'00000000'00000000'00000000'00000000'00000000'00000000>(from) |
+               king_castling_move<
+                   0b01110000'00000000'00000000'00000000'00000000'00000000'00000000'00000000,
+                   0b00110000'00000000'00000000'00000000'00000000'00000000'00000000'00000000,
+                   0b00100000'00000000'00000000'00000000'00000000'00000000'00000000'00000000>(from);
+        break;
+    }
 }
 
-[[nodiscard]] BitBoard BoardPieces::valid_moves_bitboard(const Position& from) const
+[[nodiscard]] BitBoard BoardPieces::king_moves(const Position from) const
+{
+    assert(is_king(from) && "not a king");
+    auto moves = BitBoard::neighbors_cardinal_and_diagonal(from);
+    moves.clear(active_color_board());
+    return moves | king_castling_moves(from);
+}
+
+[[nodiscard]] BitBoard BoardPieces::valid_moves_bitboard(const Position from) const
 {
     BitBoard moves;
     const auto piece = piece_at(from);
@@ -398,7 +475,7 @@ bool BoardPieces::on_pawn_start_square(const Position& from) const
     return moves;
 }
 
-BitBoard BoardPieces::sliding_moves(const Position& from, const Direction direction, const size_t range) const
+BitBoard BoardPieces::sliding_moves(const BitBoard from, const Direction direction, const size_t range) const
 {
     switch (direction) {
     case right:
@@ -421,14 +498,34 @@ BitBoard BoardPieces::sliding_moves(const Position& from, const Direction direct
     }
 }
 
+BitBoard BoardPieces::board_of_color(PieceColor color) const
+{
+    return color == PieceColor::black ? black_ : white_;
+}
+
+BitBoard& BoardPieces::board_of_color(PieceColor color)
+{
+    return color == PieceColor::black ? black_ : white_;
+}
+
 BitBoard& BoardPieces::active_color_board()
 {
-    return active_color_ == PieceColor::black ? black_ : white_;
+    return board_of_color(active_color_);
 }
 
 BitBoard BoardPieces::active_color_board() const
 {
-    return active_color_ == PieceColor::black ? black_ : white_;
+    return board_of_color(active_color_);
+}
+
+BitBoard& BoardPieces::inactive_color_board()
+{
+    return board_of_color(opposite_color(active_color_));
+}
+
+BitBoard BoardPieces::inactive_color_board() const
+{
+    return board_of_color(opposite_color(active_color_));
 }
 
 BoardPieces BoardPieces::make_standard_setup_board()
