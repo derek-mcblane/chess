@@ -259,3 +259,4 @@ std::bitset<BitBoard::board_size * BitBoard::board_size> BitBoard::to_bitset() c
 {
     return std::bitset<board_size * board_size>{bits_};
 }
+

@@ -213,8 +213,12 @@ class BitBoard
 
     [[nodiscard]] std::vector<Position> to_position_vector() const;
     [[nodiscard]] std::set<Position> to_position_set() const;
-    [[nodiscard]] std::bitset<n_bits> to_bitset() const;
+    [[nodiscard]] unsigned long long to_ullong() const
+    {
+        return bits_;
+    }
 
+    [[nodiscard]] std::bitset<n_bits> to_bitset() const;
     [[nodiscard]] std::string to_string() const
     {
         return std::bitset<n_bits>(bits_).to_string();
