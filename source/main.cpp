@@ -1,7 +1,10 @@
 #include "bit_board.h"
 #include "grid_view.h"
 #include "pieces.h"
+#include "sprite_map_grid.h"
 #include "timing.h"
+
+#include "vec2_formatter.h"
 
 #include "sdlpp.h"
 #include "sdlpp_image.h"
@@ -55,15 +58,6 @@ struct fmt::formatter<Point> : fmt::formatter<std::string>
     }
 };
 
-template <>
-struct fmt::formatter<Position> : fmt::formatter<std::string>
-{
-    auto format(Position point, format_context& ctx) -> decltype(ctx.out())
-    {
-        return format_to(ctx.out(), "[Position x={}, y={}]", point.x(), point.y());
-    }
-};
-
 Point transform_chess_to_grid_view(Position coordinate)
 {
     return {.x = coordinate.y(), .y = coordinate.x()};
@@ -72,12 +66,6 @@ Point transform_chess_to_grid_view(Position coordinate)
 Position transform_grid_view_to_chess(Point coordinate)
 {
     return {coordinate.y, coordinate.x};
-}
-
-template <typename Rep, typename Period>
-Rep to_milliseconds(const std::chrono::duration<Rep, Period> duration)
-{
-    return std::chrono::duration_cast<std::chrono::milliseconds>(duration).count();
 }
 
 template <typename Rectangle>
@@ -102,42 +90,6 @@ namespace pallete {
 }
 
 } // namespace pallete
-
-class SpriteMapGrid
-{
-  public:
-    SpriteMapGrid(Point map_size, Point n_elements) : pitch_{map_size.x / n_elements.x, map_size.y / n_elements.y} {}
-
-    [[nodiscard]] sdl::Rectangle<int> get_region(Point coordinate) const;
-
-  private:
-    Point pitch_;
-};
-
-sdl::Rectangle<int> SpriteMapGrid::get_region(Point coordinate) const
-{
-    return {.x = coordinate.x * pitch_.x, .y = coordinate.y * pitch_.y, .w = pitch_.x, .h = pitch_.y};
-}
-
-template <typename T>
-class SpriteGrid
-{
-  public:
-    using CoordinateMap = std::map<T, Point>;
-
-    SpriteGrid(Point texture_size, Point grid_size, CoordinateMap&& sprite_coordinates)
-        : pitch_{texture_size.x / grid_size.x, texture_size.y / grid_size.y},
-          coordinates_{std::move(sprite_coordinates)}
-    {}
-
-    [[nodiscard]] sdl::Rectangle<int> get_region(const T& sprite);
-
-  private:
-    Point pitch_;
-    CoordinateMap coordinates_;
-
-    [[nodiscard]] sdl::Rectangle<int> get_region(Point coordinate) const;
-};
 
 template <typename T>
 sdl::Rectangle<int> SpriteGrid<T>::get_region(Point coordinate) const
@@ -192,7 +144,7 @@ class ChessApplication
                 spdlog::debug("invalid move");
             } else {
                 spdlog::debug("moving from {} to {}", *selected_piece_coordinate_, coord);
-                pieces_.move_piece(*selected_piece_coordinate_, coord);
+                pieces_.move(*selected_piece_coordinate_, coord);
             }
             selected_piece_coordinate_ = std::nullopt;
             selected_piece_valid_moves_ = std::nullopt;

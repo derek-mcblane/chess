@@ -89,3 +89,10 @@ class MinimumPeriodWait
     Duration period_duration_;
     Duration elapsed_;
 };
+
+template <typename Rep, typename Period>
+Rep to_milliseconds(const std::chrono::duration<Rep, Period> duration)
+{
+    return std::chrono::duration_cast<std::chrono::milliseconds>(duration).count();
+}
+

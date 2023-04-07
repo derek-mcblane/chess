@@ -43,6 +43,21 @@ struct Piece
     PieceType type;
 };
 
+namespace pieces {
+constexpr auto black_pawn = Piece{PieceColor::black, PieceType::pawn};
+constexpr auto black_knight = Piece{PieceColor::black, PieceType::knight};
+constexpr auto black_bishop = Piece{PieceColor::black, PieceType::bishop};
+constexpr auto black_rook = Piece{PieceColor::black, PieceType::rook};
+constexpr auto black_queen = Piece{PieceColor::black, PieceType::queen};
+constexpr auto black_king = Piece{PieceColor::black, PieceType::king};
+constexpr auto white_pawn = Piece{PieceColor::white, PieceType::pawn};
+constexpr auto white_knight = Piece{PieceColor::white, PieceType::knight};
+constexpr auto white_bishop = Piece{PieceColor::white, PieceType::bishop};
+constexpr auto white_rook = Piece{PieceColor::white, PieceType::rook};
+constexpr auto white_queen = Piece{PieceColor::white, PieceType::queen};
+constexpr auto white_king = Piece{PieceColor::white, PieceType::king};
+} // namespace pieces
+
 inline bool operator==(const Piece& lhs, const Piece& rhs)
 {
     return (lhs.type == rhs.type) && (lhs.color == rhs.color);
@@ -87,7 +102,7 @@ class BoardPieces
     using Position = BitBoard::Position;
 
     void set_piece(Piece piece, const Position& position);
-    void move_piece(Position from, Position to);
+    void move(Position from, Position to);
     void clear_piece(const Position& position);
     [[nodiscard]] bool occupied(const Position& position) const;
     [[nodiscard]] std::optional<PieceColor> piece_color_at(const Position& position) const;
@@ -104,8 +119,8 @@ class BoardPieces
     struct PieceMove
     {
         Piece piece;
-        Position from;
-        Position to;
+        BitBoard from;
+        BitBoard to;
     };
 
     inline static constexpr Position::dimension_type black_piece_row{0};
@@ -126,12 +141,17 @@ class BoardPieces
     inline static constexpr BitBoard white_castle_queenside_rook_move{0x00'00'00'00'00'00'00'10};
     inline static constexpr BitBoard black_castle_kingside_rook_move{0x04'00'00'00'00'00'00'00};
     inline static constexpr BitBoard black_castle_queenside_rook_move{0x10'00'00'00'00'00'00'00};
-    */
 
     inline static constexpr BitBoard white_castle_kingside_king_move{0x00'00'00'00'00'00'00'02};
     inline static constexpr BitBoard white_castle_queenside_king_move{0x00'00'00'00'00'00'00'20};
     inline static constexpr BitBoard black_castle_kingside_king_move{0x02'00'00'00'00'00'00'00};
     inline static constexpr BitBoard black_castle_queenside_king_move{0x20'00'00'00'00'00'00'00};
+    */
+
+    inline static const Position white_castle_kingside_king_move{7, 6};
+    inline static const Position white_castle_queenside_king_move{7, 2};
+    inline static const Position black_castle_kingside_king_move{1, 6};
+    inline static const Position black_castle_queenside_king_move{1, 2};
     inline static const Position white_castle_kingside_rook_move{7, 5};
     inline static const Position white_castle_queenside_rook_move{7, 3};
     inline static const Position black_castle_kingside_rook_move{0, 5};
@@ -157,6 +177,7 @@ class BoardPieces
 
     [[nodiscard]] bool occupied(BitBoard position) const;
     [[nodiscard]] std::optional<Piece> piece_at(BitBoard position) const;
+    [[nodiscard]] Piece piece_at_checked(BitBoard position) const;
     [[nodiscard]] BitBoard occupied_board() const;
     [[nodiscard]] BitBoard attacked_board() const;
     [[nodiscard]] std::optional<PieceType> piece_type_at(BitBoard position) const;
@@ -171,6 +192,8 @@ class BoardPieces
     [[nodiscard]] bool is_white(BitBoard position) const;
     void clear_pieces(BitBoard board);
     void set_pieces(Piece piece, BitBoard positions);
+    void move_piece(PieceMove move);
+    void move(BitBoard from, BitBoard to);
     void set_squares_attacked_by(const Position& position);
     void clear_squares_attacked_by(const Position& position);
     void update_en_passant_state(PieceMove move);
@@ -195,9 +218,9 @@ class BoardPieces
     [[nodiscard]] bool black_can_castle_kingside() const;
     [[nodiscard]] bool black_can_castle_queenside() const;
     [[nodiscard]] bool can_castle(BitBoard between_squares, BitBoard king_squares) const;
-    [[nodiscard]] BitBoard black_king_castling_moves(Position from) const;
-    [[nodiscard]] BitBoard white_king_castling_moves(Position from) const;
-    [[nodiscard]] BitBoard king_castling_moves(Position from) const;
+    [[nodiscard]] BitBoard black_king_castling_moves() const;
+    [[nodiscard]] BitBoard white_king_castling_moves() const;
+    [[nodiscard]] BitBoard king_castling_moves() const;
     [[nodiscard]] BitBoard king_moves(Position from) const;
     [[nodiscard]] BitBoard valid_moves_bitboard(Position from) const;
 

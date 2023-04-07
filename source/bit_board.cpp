@@ -1,9 +1,23 @@
 #include "bit_board.h"
 
-#include <bitset>
+#include <bit>
 #include <cassert>
+#include <exception>
 #include <set>
 #include <vector>
+
+BitBoard::BitBoard(const std::string& board)
+{
+    if (board.length() != n_bits) {
+        throw std::runtime_error("invalid string length for BitBoard");
+    }
+
+    for (size_t i = 0; i < board.length(); ++i) {
+        if (board[i] == '1') {
+            bits_ |= (top_left >> i);
+        }
+    }
+}
 
 template <>
 bool BitBoard::on_edge<right>() const
@@ -207,7 +221,12 @@ BitBoard& BitBoard::shift_assign(const BitBoard::Position relative_offset)
 
 BitBoard BitBoard::from_position(const Position& position)
 {
-    return BitBoard::make_top_left().shift_assign<down>(position.x()).shift_assign<right>(position.y());
+    assert(position.x() < board_size);
+    assert(position.y() < board_size);
+    auto board = BitBoard::make_top_left();
+    board.bits_ >>= position.x() * board_size;
+    board.bits_ >>= position.y();
+    return board;
 }
 
 BitBoard BitBoard::neighbors_cardinal(const Position& position)
@@ -225,6 +244,22 @@ BitBoard BitBoard::neighbors_diagonal(const Position& position)
 BitBoard BitBoard::neighbors_cardinal_and_diagonal(const Position& position)
 {
     return neighbors_cardinal(position) | neighbors_diagonal(position);
+}
+
+std::size_t BitBoard::count() const
+{
+    return std::popcount(bits_);
+}
+
+BitBoard::Position BitBoard::index_to_position(const std::size_t index)
+{
+    using T = Position::dimension_type;
+    return {static_cast<T>(index / board_size), static_cast<T>(index % board_size)};
+}
+
+BitBoard::Position BitBoard::to_position() const
+{
+    return index_to_position(std::countl_zero(bits_));
 }
 
 std::vector<BitBoard::Position> BitBoard::to_position_vector() const
@@ -255,8 +290,11 @@ std::set<BitBoard::Position> BitBoard::to_position_set() const
     return positions;
 }
 
-std::bitset<BitBoard::board_size * BitBoard::board_size> BitBoard::to_bitset() const
+std::string BitBoard::to_string() const
 {
-    return std::bitset<board_size * board_size>{bits_};
+    std::string str;
+    for (size_t i = 0; i < n_bits; ++i) {
+        str.push_back(((bits_ & (top_left >> i)) == 0U) ? '0' : '1');
+    }
+    return str;
 }
-

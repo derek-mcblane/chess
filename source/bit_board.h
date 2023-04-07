@@ -2,7 +2,6 @@
 
 #include "vec2.h"
 
-#include <bitset>
 #include <cassert>
 #include <set>
 #include <vector>
@@ -25,14 +24,14 @@ class BitBoard
     using Position = dm::Vec2<int>;
     using Bits = std::uint64_t;
 
-    static constexpr size_t board_size = 8;
-    static constexpr size_t n_bits = 64;
+    static constexpr int board_size = 8;
+    static constexpr std::size_t n_bits = 64;
     static_assert(sizeof(Bits) * CHAR_BIT == n_bits, "number of bits mismatch");
 
     constexpr BitBoard() : BitBoard(0) {}
     constexpr BitBoard(const Bits bits) : bits_(bits) {}
-    constexpr BitBoard(const std::bitset<n_bits> bits) : bits_(bits.to_ullong()) {}
     constexpr BitBoard(const Position& position) : BitBoard(from_position(position)) {}
+    BitBoard(const std::string& board);
 
     constexpr BitBoard(const BitBoard& other) = default;
     constexpr BitBoard& operator=(const BitBoard&) = default;
@@ -147,10 +146,7 @@ class BitBoard
         return bits_ == 0U;
     }
 
-    [[nodiscard]] std::size_t count() const
-    {
-        return std::bitset<n_bits>(bits_).count();
-    }
+    [[nodiscard]] std::size_t count() const;
 
     BitBoard& set(const BitBoard other)
     {
@@ -212,17 +208,14 @@ class BitBoard
     BitBoard& dilate(Direction direction, size_t n = 1);
 
     [[nodiscard]] std::vector<Position> to_position_vector() const;
+    [[nodiscard]] Position to_position() const;
     [[nodiscard]] std::set<Position> to_position_set() const;
     [[nodiscard]] unsigned long long to_ullong() const
     {
         return bits_;
     }
 
-    [[nodiscard]] std::bitset<n_bits> to_bitset() const;
-    [[nodiscard]] std::string to_string() const
-    {
-        return std::bitset<n_bits>(bits_).to_string();
-    }
+    [[nodiscard]] std::string to_string() const;
 
     bool operator==(const BitBoard other) const
     {
@@ -302,4 +295,5 @@ class BitBoard
     static constexpr Bits positive_slope = 0b00000001'00000010'00000100'00001000'00010000'00100000'01000000'10000000;
 
     static BitBoard from_position(const Position& position);
+    static Position index_to_position(std::size_t index);
 };

@@ -3,92 +3,91 @@
 #include "bit_board.h"
 
 #include <algorithm>
-#include <bitset>
 #include <iterator>
 
 class BitBoardShiftTest : public ::testing::Test
 {};
 
-static const BitBoard test_board{std::bitset<64>{"10101010"
-                                                 "01010101"
-                                                 "10101010"
-                                                 "01010101"
-                                                 "10101010"
-                                                 "01010101"
-                                                 "10101010"
-                                                 "01010101"}};
+static const BitBoard test_board{"10101010"
+                                 "01010101"
+                                 "10101010"
+                                 "01010101"
+                                 "10101010"
+                                 "01010101"
+                                 "10101010"
+                                 "01010101"};
 
-static const BitBoard down_board{std::bitset<64>{"00000000"
-                                                 "10101010"
-                                                 "01010101"
-                                                 "10101010"
-                                                 "01010101"
-                                                 "10101010"
-                                                 "01010101"
-                                                 "10101010"}};
+static const BitBoard down_board{"00000000"
+                                 "10101010"
+                                 "01010101"
+                                 "10101010"
+                                 "01010101"
+                                 "10101010"
+                                 "01010101"
+                                 "10101010"};
 
-static const BitBoard up_board{std::bitset<64>{"01010101"
-                                               "10101010"
-                                               "01010101"
-                                               "10101010"
-                                               "01010101"
-                                               "10101010"
-                                               "01010101"
-                                               "00000000"}};
+static const BitBoard up_board{"01010101"
+                               "10101010"
+                               "01010101"
+                               "10101010"
+                               "01010101"
+                               "10101010"
+                               "01010101"
+                               "00000000"};
 
-static const BitBoard left_board{std::bitset<64>{"01010100"
-                                                 "10101010"
-                                                 "01010100"
-                                                 "10101010"
-                                                 "01010100"
-                                                 "10101010"
-                                                 "01010100"
-                                                 "10101010"}};
+static const BitBoard left_board{"01010100"
+                                 "10101010"
+                                 "01010100"
+                                 "10101010"
+                                 "01010100"
+                                 "10101010"
+                                 "01010100"
+                                 "10101010"};
 
-static const BitBoard right_board{std::bitset<64>{"01010101"
-                                                  "00101010"
-                                                  "01010101"
-                                                  "00101010"
-                                                  "01010101"
-                                                  "00101010"
-                                                  "01010101"
-                                                  "00101010"}};
+static const BitBoard right_board{"01010101"
+                                  "00101010"
+                                  "01010101"
+                                  "00101010"
+                                  "01010101"
+                                  "00101010"
+                                  "01010101"
+                                  "00101010"};
 
-static const BitBoard upleft_board{std::bitset<64>{"10101010"
-                                                   "01010100"
-                                                   "10101010"
-                                                   "01010100"
-                                                   "10101010"
-                                                   "01010100"
-                                                   "10101010"
-                                                   "00000000"}};
+static const BitBoard upleft_board{"10101010"
+                                   "01010100"
+                                   "10101010"
+                                   "01010100"
+                                   "10101010"
+                                   "01010100"
+                                   "10101010"
+                                   "00000000"};
 
-static const BitBoard upright_board{std::bitset<64>{"00101010"
-                                                    "01010101"
-                                                    "00101010"
-                                                    "01010101"
-                                                    "00101010"
-                                                    "01010101"
-                                                    "00101010"
-                                                    "00000000"}};
+static const BitBoard upright_board{"00101010"
+                                    "01010101"
+                                    "00101010"
+                                    "01010101"
+                                    "00101010"
+                                    "01010101"
+                                    "00101010"
+                                    "00000000"};
 
-static const BitBoard downleft_board{std::bitset<64>{"00000000"
-                                                     "01010100"
-                                                     "10101010"
-                                                     "01010100"
-                                                     "10101010"
-                                                     "01010100"
-                                                     "10101010"
-                                                     "01010100"}};
+static const BitBoard downleft_board{"00000000"
+                                     "01010100"
+                                     "10101010"
+                                     "01010100"
+                                     "10101010"
+                                     "01010100"
+                                     "10101010"
+                                     "01010100"};
 
-static const BitBoard downright_board{std::bitset<64>{"00000000"
-                                                      "01010101"
-                                                      "00101010"
-                                                      "01010101"
-                                                      "00101010"
-                                                      "01010101"
-                                                      "00101010"
-                                                      "01010101"}};
+static const BitBoard downright_board{"00000000"
+                                      "01010101"
+                                      "00101010"
+                                      "01010101"
+                                      "00101010"
+                                      "01010101"
+                                      "00101010"
+                                      "01010101"};
 
 TEST(BoardSetBit, Single)
 {
@@ -133,37 +132,37 @@ TEST(BoardTestBit, Checkered)
 
 TEST(BoardTestAny, True)
 {
-    static const BitBoard square{std::bitset<64>{"00000000"
-                                                 "00000000"
-                                                 "00111100"
-                                                 "00111100"
-                                                 "00111100"
-                                                 "00111100"
-                                                 "00000000"
-                                                 "00000000"}};
+    static const BitBoard square{"00000000"
+                                 "00000000"
+                                 "00111100"
+                                 "00111100"
+                                 "00111100"
+                                 "00111100"
+                                 "00000000"
+                                 "00000000"};
     EXPECT_TRUE(test_board.test_any(square));
     EXPECT_TRUE(square.test_any(test_board));
 }
 
 TEST(BoardTestAny, False)
 {
-    static const BitBoard left_board{std::bitset<64>{"11110000"
-                                                     "11110000"
-                                                     "11110000"
-                                                     "11110000"
-                                                     "11110000"
-                                                     "11110000"
-                                                     "11110000"
-                                                     "11110000"}};
+    static const BitBoard left_board{"11110000"
+                                     "11110000"
+                                     "11110000"
+                                     "11110000"
+                                     "11110000"
+                                     "11110000"
+                                     "11110000"
+                                     "11110000"};
 
-    static const BitBoard right_board{std::bitset<64>{"00001111"
-                                                      "00001111"
-                                                      "00001111"
-                                                      "00001111"
-                                                      "00001111"
-                                                      "00001111"
-                                                      "00001111"
-                                                      "00001111"}};
+    static const BitBoard right_board{"00001111"
+                                      "00001111"
+                                      "00001111"
+                                      "00001111"
+                                      "00001111"
+                                      "00001111"
+                                      "00001111"
+                                      "00001111"};
     EXPECT_FALSE(left_board.test_any(right_board));
     EXPECT_FALSE(right_board.test_any(left_board));
 }

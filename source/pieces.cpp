@@ -2,6 +2,7 @@
 
 #include "bit_board_formatter.h"
 #include "piece_formatter.h"
+#include "vec2_formatter.h"
 
 #include <spdlog/spdlog.h>
 
@@ -39,8 +40,8 @@ void BoardPieces::clear_pieces(const BitBoard board)
 void BoardPieces::set_pieces(const Piece piece, const BitBoard positions)
 {
     clear_pieces(positions);
+    assert(!occupied_board().test_any(positions));
 
-    spdlog::debug("set_pieces({}, {})", piece, positions);
     switch (piece.type) {
     case PieceType::pawn:
         pawns_.set(positions);
@@ -86,8 +87,10 @@ void BoardPieces::update_en_passant_state(const PieceMove move)
 {
     en_passant_square_.reset_all();
     if (move.piece.type == PieceType::pawn) {
-        if (Position::chebyshev_distance(move.from, move.to) == 2) {
-            en_passant_square_.set((move.from + move.to) / 2);
+        const auto from_position = move.from.to_position();
+        const auto to_position = move.to.to_position();
+        if (Position::chebyshev_distance(from_position, to_position) == 2) {
+            en_passant_square_.set((from_position + to_position) / 2);
         }
     }
 }
@@ -116,60 +119,65 @@ void BoardPieces::update_castling_state(const PieceMove move)
     }
 }
 
-void BoardPieces::move_piece(const Position from, const Position to)
+void BoardPieces::move_piece(const PieceMove move)
 {
+    assert(piece_at_checked(move.from) == move.piece);
+    spdlog::debug("moving {} from {} to {}", move.piece, move.from.to_position(), move.to.to_position());
+    set_pieces(move.piece, move.to);
+    clear_pieces(move.from);
+}
+
+void BoardPieces::move(const Position from, const Position to)
+{
+    move(BitBoard{from}, BitBoard{to});
+}
+
+void BoardPieces::move(const BitBoard from, const BitBoard to)
+{
+    assert(from.count() == 1);
+    assert(to.count() == 1);
     assert(from != to && "move `from == to`");
     const auto piece = piece_at(from);
     assert(piece.has_value() && "move from empty square");
     const auto move = PieceMove{*piece, from, to};
 
+    spdlog::debug("move(from={}, to={})", from.to_position(), to.to_position());
+
     // en passant capture
-    if (move.piece.type == PieceType::pawn && en_passant_square_.test(move.to)) {
-        clear_piece({move.from.x(), move.to.y()});
+    if (move.piece.type == PieceType::pawn && en_passant_square_.test_any(move.to)) {
+        clear_piece({move.from.to_position().x(), move.to.to_position().y()});
     }
 
     // castling move
     if (move.piece.type == PieceType::king) {
-        PieceMove rook_move;
-        switch (active_color_) {
+        switch (move.piece.color) {
         case PieceColor::black:
-            if (!black_king_castling_moves(move.from).test(move.to)) {
+            if (!black_king_castling_moves().test_any(move.to)) {
                 break;
             }
-            if (black_castle_kingside_king_move == move.from) {
-                const auto rook = piece_at(black_kingside_rook_position);
-                assert(rook.has_value());
-                rook_move = PieceMove{*rook, black_kingside_rook_position, black_castle_kingside_rook_move};
+            if (black_castle_kingside_king_move == move.to) {
+                move_piece({pieces::black_rook, black_kingside_rook_position, black_castle_kingside_rook_move});
             }
-            if (black_castle_queenside_king_move == move.from) {
-                const auto rook = piece_at(black_queenside_rook_position);
-                assert(rook.has_value());
-                rook_move = PieceMove{*rook, black_queenside_rook_position, black_castle_queenside_rook_move};
+            if (black_castle_queenside_king_move == move.to) {
+                move_piece({pieces::black_rook, black_queenside_rook_position, black_castle_queenside_rook_move});
             }
             break;
         case PieceColor::white:
-            if (!white_king_castling_moves(move.from).test(move.to)) {
+            if (!white_king_castling_moves().test_any(move.to)) {
                 break;
             }
-            if (white_castle_kingside_king_move == move.from) {
-                const auto rook = piece_at(white_kingside_rook_position);
-                assert(rook.has_value());
-                rook_move = PieceMove{*rook, white_kingside_rook_position, white_castle_kingside_rook_move};
+            if (white_castle_kingside_king_move == move.to) {
+                move_piece({pieces::white_rook, white_kingside_rook_position, white_castle_kingside_rook_move});
             }
-            if (white_castle_queenside_king_move == move.from) {
-                const auto rook = piece_at(white_queenside_rook_position);
-                assert(rook.has_value());
-                rook_move = PieceMove{*rook, white_queenside_rook_position, white_castle_queenside_rook_move};
+            if (white_castle_queenside_king_move == move.to) {
+                move_piece({pieces::white_rook, white_queenside_rook_position, white_castle_queenside_rook_move});
             }
             break;
         }
-        set_piece(rook_move.piece, rook_move.to);
-        clear_piece(rook_move.from);
     }
 
     // normal move
-    set_piece(move.piece, move.to);
-    clear_piece(move.from);
+    move_piece(move);
     active_color_ = opposite_color(active_color_);
 
     update_en_passant_state(move);
@@ -304,6 +312,13 @@ void BoardPieces::set_squares_attacked_by(const Position& position)
         return {};
     }
     return Piece{.color = *piece_color, .type = *piece_type};
+}
+
+[[nodiscard]] Piece BoardPieces::piece_at_checked(const BitBoard position) const
+{
+    const auto piece = piece_at(position);
+    assert(piece.has_value());
+    return *piece;
 }
 
 // todo: update color boards
@@ -487,28 +502,25 @@ bool BoardPieces::can_castle(const BitBoard between_squares, const BitBoard king
     return (!between_squares.test_any(occupied_board()) && !king_squares.test_any(attacked_board()));
 }
 
-[[nodiscard]] BitBoard BoardPieces::white_king_castling_moves(const Position from) const
+[[nodiscard]] BitBoard BoardPieces::white_king_castling_moves() const
 {
-    assert(is_king(from) && "not a king");
     return (white_can_castle_kingside() ? white_castle_kingside_king_move : BitBoard{}) |
            (white_can_castle_queenside() ? white_castle_queenside_king_move : BitBoard{});
 }
 
-[[nodiscard]] BitBoard BoardPieces::black_king_castling_moves(const Position from) const
+[[nodiscard]] BitBoard BoardPieces::black_king_castling_moves() const
 {
-    assert(is_king(from) && "not a king");
     return (black_can_castle_kingside() ? black_castle_kingside_king_move : BitBoard{}) |
            (black_can_castle_queenside() ? black_castle_queenside_king_move : BitBoard{});
 }
 
-[[nodiscard]] BitBoard BoardPieces::king_castling_moves(const Position from) const
+[[nodiscard]] BitBoard BoardPieces::king_castling_moves() const
 {
-    assert(is_king(from) && "not a king");
     switch (active_color_) {
     case PieceColor::white:
-        return white_king_castling_moves(from);
+        return white_king_castling_moves();
     case PieceColor::black:
-        return black_king_castling_moves(from);
+        return black_king_castling_moves();
     }
 }
 
@@ -517,7 +529,7 @@ bool BoardPieces::can_castle(const BitBoard between_squares, const BitBoard king
     assert(is_king(from) && "not a king");
     auto moves = BitBoard::neighbors_cardinal_and_diagonal(from);
     moves.clear(active_color_board());
-    return moves | king_castling_moves(from);
+    return moves | king_castling_moves();
 }
 
 [[nodiscard]] BitBoard BoardPieces::valid_moves_bitboard(const Position from) const
