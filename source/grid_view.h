@@ -13,10 +13,11 @@ class GridView
 
     GridView(Point grid_size, Point pixel_size) : grid_size(grid_size), pixel_size(pixel_size) {}
 
+    Point offset{0, 0};
     Point grid_size;
     Point pixel_size;
 
-    [[nodiscard]] sdl::Rectangle<float> grid_cell(Point index) const;
+    [[nodiscard]] sdl::Rectangle<int> grid_cell(Point index) const;
     [[nodiscard]] Point grid_index(Point position) const;
     [[nodiscard]] Point grid_cell_position(Point index) const;
     [[nodiscard]] Point cell_size() const;

@@ -55,10 +55,70 @@ struct select_point<float>
 template <typename T>
 using Point = typename select_point<T>::type;
 
-template <typename Point>
-bool point_equals(Point lhs, Point rhs)
+template <typename PointT>
+bool operator==(const PointT lhs, const PointT rhs)
 {
-    return lhs.x == rhs.x && lhs.y == rhs.y;
+    return {lhs.x == rhs.x, lhs.y == rhs.y};
+}
+
+template <typename PointT>
+bool operator!=(const PointT lhs, const PointT rhs)
+{
+    return !(lhs == rhs);
+}
+
+template <typename PointT>
+PointT operator+(const PointT lhs, const PointT rhs)
+{
+    return {lhs.x + rhs.x, lhs.y + rhs.y};
+}
+
+template <typename PointT>
+PointT& operator+=(PointT& lhs, const PointT rhs)
+{
+    return lhs = lhs + rhs;
+}
+
+template <typename PointT>
+PointT operator-(const PointT lhs, const PointT rhs)
+{
+    return {lhs.x + rhs.x, lhs.y + rhs.y};
+}
+
+template <typename PointT>
+PointT& operator-=(PointT& lhs, const PointT rhs)
+{
+    return lhs = lhs - rhs;
+}
+
+template <typename PointT, typename U>
+PointT operator*(const U lhs, const PointT rhs)
+{
+    return {lhs * rhs.x, lhs * rhs.y};
+}
+
+template <typename PointT, typename U>
+PointT operator*(const PointT lhs, const U rhs)
+{
+    return {lhs.x * rhs, lhs.y * rhs};
+}
+
+template <typename PointT, typename U>
+PointT& operator*=(PointT& lhs, const U rhs)
+{
+    return lhs = lhs * rhs;
+}
+
+template <typename PointT, typename U>
+PointT operator/(const PointT lhs, const U rhs)
+{
+    return {lhs.x / rhs, lhs.y / rhs};
+}
+
+template <typename PointT, typename U>
+PointT& operator/=(PointT& lhs, const U rhs)
+{
+    return lhs = lhs / rhs;
 }
 
 template <typename T>

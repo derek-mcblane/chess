@@ -4,15 +4,19 @@
 
 using Point = GridView::Point;
 
-[[nodiscard]] sdl::Rectangle<float> GridView::grid_cell(Point index) const
+[[nodiscard]] sdl::Rectangle<int> GridView::grid_cell(Point index) const
 {
-    const auto width = static_cast<float>(cell_size().x);
-    const auto height = static_cast<float>(cell_size().y);
-    return {static_cast<float>(index.x) * width, static_cast<float>(index.y) * height, width, height};
+    using namespace sdl;
+    const auto width = cell_size().x;
+    const auto height = cell_size().y;
+    auto origin = offset + Point{index.x * width, index.y * height};
+    return {origin.x, origin.y, width, height};
 }
 
 [[nodiscard]] Point GridView::grid_index(Point position) const
 {
+    using namespace sdl;
+    position -= offset;
     return {position.x / cell_size().x, position.y / cell_size().y};
 }
 
@@ -38,9 +42,9 @@ void GridView::clear_on_cell_clicked_callback()
 
 void GridView::on_button_down(const SDL_MouseButtonEvent& event)
 {
+    using namespace sdl;
     selected_index_.reset();
-
-    Point clicked_index{grid_index({event.x, event.y})};
+    Point clicked_index{grid_index(Point{event.x, event.y} - offset)};
     if (clicked_index.x < 0 || clicked_index.x >= grid_size.x) {
         return;
     }
@@ -52,8 +56,9 @@ void GridView::on_button_down(const SDL_MouseButtonEvent& event)
 
 void GridView::on_button_up(const SDL_MouseButtonEvent& event)
 {
-    const Point up_index = grid_index({event.x, event.y});
-    if (sdl::point_equals(up_index, down_index_.load())) {
+    using namespace sdl;
+    const Point up_index = grid_index(Point{event.x, event.y} - offset);
+    if (up_index == down_index_.load()) {
         selected_index_ = up_index;
         if (on_cell_clicked_) {
             (*on_cell_clicked_)(up_index);

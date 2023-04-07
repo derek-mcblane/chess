@@ -221,6 +221,9 @@ class ChessApplication
     {
         const auto min_dimension_size = std::min(std::get<0>(window_.size()), std::get<1>(window_.size()));
         board_display_.pixel_size = {min_dimension_size, min_dimension_size};
+        board_offset_ = {
+            (std::get<0>(window_.size()) - board_display_.pixel_size.x) / 2,
+            (std::get<1>(window_.size()) - board_display_.pixel_size.y) / 2};
     }
 
     void render_board()
@@ -229,21 +232,27 @@ class ChessApplication
         for (int col = 0; col < board_display_.grid_size.x; ++col) {
             for (int row = 0; row < board_display_.grid_size.y; ++row) {
                 renderer_.set_draw_color(((row + col) % 2 == 0) ? pallete::white : pallete::jasons_dumbass_blue);
-                renderer_.fill_rectangle(board_display_.grid_cell({row, col}));
+                auto cell = board_display_.grid_cell({row, col});
+                cell.x += board_offset_.x;
+                cell.y += board_offset_.y;
+                renderer_.fill_rectangle(cell);
             }
         }
 
         renderer_.set_draw_blend_mode(SDL_BLENDMODE_BLEND);
         const auto lock = std::lock_guard{pieces_mutex_};
         if (selected_piece_coordinate_.has_value() && selected_piece_valid_moves_.has_value()) {
-            auto selected_color = pallete::light_green;
-            selected_color.a = 0x7F;
+            const auto selected_color = pallete::color_with_alpha(pallete::light_green, 0x7F);
             renderer_.set_draw_color(selected_color);
-            renderer_.fill_rectangle(board_display_.grid_cell(transform_chess_to_grid_view(*selected_piece_coordinate_))
-            );
+            auto cell = board_display_.grid_cell(transform_chess_to_grid_view(*selected_piece_coordinate_));
+            cell.x += board_offset_.x;
+            cell.y += board_offset_.y;
+            renderer_.fill_rectangle(cell);
             for (const auto move : selected_piece_valid_moves_->to_position_vector()) {
-                const auto grid_cell = board_display_.grid_cell(transform_chess_to_grid_view(move));
-                renderer_.fill_rectangle(grid_cell);
+                auto cell = board_display_.grid_cell(transform_chess_to_grid_view(move));
+                cell.x += board_offset_.x;
+                cell.y += board_offset_.y;
+                renderer_.fill_rectangle(cell);
             }
         }
     }
@@ -261,8 +270,8 @@ class ChessApplication
                 const auto piece_rect = pieces_sprite_map_.get_region(*piece);
                 const auto piece_position = board_display_.grid_cell_position(transform_chess_to_grid_view(coord));
                 const auto piece_size = board_display_.cell_size();
-                const auto screen_rect =
-                    sdl::Rectangle<int>{piece_position.x, piece_position.y, piece_size.x, piece_size.y};
+                const auto screen_rect = sdl::Rectangle<int>{
+                    board_offset_.x + piece_position.x, board_offset_.y + piece_position.y, piece_size.x, piece_size.y};
                 renderer_.copy<int>(pieces_sprites_, piece_rect, screen_rect);
             }
         }
@@ -300,6 +309,7 @@ class ChessApplication
 
     static constexpr auto board_size = 8;
     GridView board_display_{{board_size, board_size}, {screen_region.w, screen_region.h}};
+    sdl::Point<int> board_offset_;
 
     sdl::Texture pieces_sprites_{sdl::Texture{
         renderer_.make_texture_from_surface(sdl::image::load_image("resources/pieces_sprite_map.png").get())}};
@@ -337,6 +347,7 @@ int main(int argc, char* argv[])
     spdlog::set_level(spdlog::level::debug);
     sdl::Context global_setup{sdl::InitFlags::Video};
     sdl::image::Context global_image_setup{sdl::image::InitFlags::png};
+    SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "1");
     ChessApplication{}.run();
     return 0;
 }
