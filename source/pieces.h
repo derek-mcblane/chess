@@ -127,8 +127,6 @@ class BoardPieces
     inline static constexpr Position::dimension_type black_pawn_row{1};
     inline static constexpr Position::dimension_type white_piece_row{7};
     inline static constexpr Position::dimension_type white_pawn_row{6};
-    inline static constexpr Position::dimension_type kingside_rook_col{0};
-    inline static constexpr Position::dimension_type queenside_rook_col{7};
 
     inline static constexpr BitBoard black_king_position{0x08'00'00'00'00'00'00'00U};
     inline static constexpr BitBoard black_kingside_rook_position{0x80'00'00'00'00'00'00'00U};
