@@ -170,11 +170,7 @@ class ChessApplication
             const auto window_size = ::Point{event.data1, event.data2};
             const auto min_dimension_size = std::min(window_size.x, window_size.y);
             board_display_.pixel_size = {min_dimension_size, min_dimension_size};
-            board_display_.origin = {
-                (std::get<0>(window_.size()) - board_display_.pixel_size.x) / 2,
-                (std::get<1>(window_.size()) - board_display_.pixel_size.y) / 2};
             board_display_.origin = (window_size - board_display_.pixel_size) / 2;
-            spdlog::debug("updated board_display_.origin={}", board_display_.origin);
         });
     }
 
