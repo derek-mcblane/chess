@@ -130,7 +130,6 @@ class BoardPieces
     inline static constexpr Position::dimension_type kingside_rook_col{0};
     inline static constexpr Position::dimension_type queenside_rook_col{7};
 
-    /*
     inline static constexpr BitBoard black_king_position{0x08'00'00'00'00'00'00'00U};
     inline static constexpr BitBoard black_kingside_rook_position{0x80'00'00'00'00'00'00'00U};
     inline static constexpr BitBoard black_queenside_rook_position{0x01'00'00'00'00'00'00'00U};
@@ -146,8 +145,8 @@ class BoardPieces
     inline static constexpr BitBoard white_castle_queenside_king_move{0x00'00'00'00'00'00'00'20U};
     inline static constexpr BitBoard white_castle_kingside_rook_move{0x00'00'00'00'00'00'00'04U};
     inline static constexpr BitBoard white_castle_queenside_rook_move{0x00'00'00'00'00'00'00'10U};
-    */
 
+    /*
     inline static constexpr Position black_king_position{0, 4};
     inline static constexpr Position black_kingside_rook_position{0, 7};
     inline static constexpr Position black_queenside_rook_position{0, 0};
@@ -163,6 +162,7 @@ class BoardPieces
     inline static constexpr Position white_castle_queenside_king_move{7, 2};
     inline static constexpr Position white_castle_kingside_rook_move{7, 5};
     inline static constexpr Position white_castle_queenside_rook_move{7, 3};
+    */
 
     std::vector<PieceMove> move_history_;
     std::map<Position, BitBoard> attacked_by_;
@@ -201,6 +201,9 @@ class BoardPieces
     void set_pieces(Piece piece, BitBoard positions);
     void move_piece(PieceMove move);
     void move(BitBoard from, BitBoard to);
+    void castle(PieceMove king_move);
+    void white_castle(PieceMove king_move);
+    void black_castle(PieceMove king_move);
     void set_squares_attacked_by(const Position& position);
     void clear_squares_attacked_by(const Position& position);
     void update_en_passant_state(PieceMove move);

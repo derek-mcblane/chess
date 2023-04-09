@@ -127,6 +127,39 @@ void BoardPieces::move_piece(const PieceMove move)
     clear_pieces(move.from);
 }
 
+void BoardPieces::white_castle(const PieceMove king_move)
+{
+    const auto white_moves = white_king_castling_moves();
+    if ((white_moves & white_castle_kingside_king_move) == king_move.to) {
+        move_piece({pieces::white_rook, white_kingside_rook_position, white_castle_kingside_rook_move});
+    }
+    if ((white_moves & white_castle_queenside_king_move) == king_move.to) {
+        move_piece({pieces::white_rook, white_queenside_rook_position, white_castle_queenside_rook_move});
+    }
+}
+
+void BoardPieces::black_castle(const PieceMove king_move)
+{
+    const auto black_moves = black_king_castling_moves();
+    if ((black_moves & black_castle_kingside_king_move) == king_move.to) {
+        move_piece({pieces::black_rook, black_kingside_rook_position, black_castle_kingside_rook_move});
+    }
+    if ((black_moves & black_castle_queenside_king_move) == king_move.to) {
+        move_piece({pieces::black_rook, black_queenside_rook_position, black_castle_queenside_rook_move});
+    }
+}
+
+void BoardPieces::castle(const PieceMove king_move)
+{
+    switch (king_move.piece.color) {
+    case PieceColor::black:
+        black_castle(king_move);
+    case PieceColor::white:
+        white_castle(king_move);
+        break;
+    }
+}
+
 void BoardPieces::move(const Position from, const Position to)
 {
     move(BitBoard{from}, BitBoard{to});
@@ -150,30 +183,7 @@ void BoardPieces::move(const BitBoard from, const BitBoard to)
 
     // castling move
     if (move.piece.type == PieceType::king) {
-        switch (move.piece.color) {
-        case PieceColor::black:
-            if (!black_king_castling_moves().test_any(move.to)) {
-                break;
-            }
-            if (black_castle_kingside_king_move == move.to) {
-                move_piece({pieces::black_rook, black_kingside_rook_position, black_castle_kingside_rook_move});
-            }
-            if (black_castle_queenside_king_move == move.to) {
-                move_piece({pieces::black_rook, black_queenside_rook_position, black_castle_queenside_rook_move});
-            }
-            break;
-        case PieceColor::white:
-            if (!white_king_castling_moves().test_any(move.to)) {
-                break;
-            }
-            if (white_castle_kingside_king_move == move.to) {
-                move_piece({pieces::white_rook, white_kingside_rook_position, white_castle_kingside_rook_move});
-            }
-            if (white_castle_queenside_king_move == move.to) {
-                move_piece({pieces::white_rook, white_queenside_rook_position, white_castle_queenside_rook_move});
-            }
-            break;
-        }
+        castle(move);
     }
 
     // normal move
@@ -405,12 +415,12 @@ bool BoardPieces::is_pawn_start_square(const Position from) const
     BitBoard attacking_moves;
     switch (active_color_) {
     case PieceColor::white:
-        forward_moves = sliding_moves<up>(from, n_spaces);
+        forward_moves = sliding_moves<up>(from, n_spaces).clear(occupied_board());
         attacking_moves = BitBoard::shift<upright>(from_board) | BitBoard::shift<upleft>(from_board);
         attacking_moves &= (black_ | en_passant_square_);
         break;
     case PieceColor::black:
-        forward_moves = sliding_moves<down>(from, n_spaces);
+        forward_moves = sliding_moves<down>(from, n_spaces).clear(occupied_board());
         attacking_moves = BitBoard::shift<downright>(from_board) | BitBoard::shift<downleft>(from_board);
         attacking_moves &= (white_ | en_passant_square_);
         break;
