@@ -13,7 +13,7 @@ class GridView
 
     GridView(Point grid_size, Point pixel_size) : grid_size(grid_size), pixel_size(pixel_size) {}
 
-    Point offset{0, 0};
+    Point origin{0, 0};
     Point grid_size;
     Point pixel_size;
 
@@ -32,4 +32,8 @@ class GridView
     std::atomic<Point> down_index_;
     std::optional<std::atomic<Point>> selected_index_;
     std::optional<OnClickedCallback> on_cell_clicked_;
+
+    [[nodiscard]] sdl::Rectangle<int> grid_cell_local(Point index) const;
+    [[nodiscard]] Point grid_index_local(Point position) const;
+    [[nodiscard]] Point grid_cell_position_local(Point index) const;
 };

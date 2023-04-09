@@ -217,7 +217,6 @@ void Renderer::draw_line(Point<int> begin, Point<int> end) const
     draw_line(begin.x, begin.y, end.x, end.y);
 }
 
-
 template <>
 void Renderer::fill_rectangle<Rectangle<int>>(const Rectangle<int>& rectangle)
 {

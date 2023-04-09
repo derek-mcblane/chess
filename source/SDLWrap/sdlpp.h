@@ -58,7 +58,7 @@ using Point = typename select_point<T>::type;
 template <typename PointT>
 bool operator==(const PointT lhs, const PointT rhs)
 {
-    return {lhs.x == rhs.x, lhs.y == rhs.y};
+    return lhs.x == rhs.x && lhs.y == rhs.y;
 }
 
 template <typename PointT>
@@ -82,7 +82,7 @@ PointT& operator+=(PointT& lhs, const PointT rhs)
 template <typename PointT>
 PointT operator-(const PointT lhs, const PointT rhs)
 {
-    return {lhs.x + rhs.x, lhs.y + rhs.y};
+    return {lhs.x - rhs.x, lhs.y - rhs.y};
 }
 
 template <typename PointT>
@@ -156,6 +156,24 @@ struct rectangle_dimension<SDL_FRect>
 {
     using type = float;
 };
+
+template <typename RectangleT>
+RectangleT operator+(const RectangleT lhs, const Point<typename rectangle_dimension<RectangleT>::type> rhs)
+{
+    return RectangleT{lhs.x + rhs.x, lhs.y + rhs.y, lhs.w, lhs.h};
+}
+
+template <typename RectangleT>
+RectangleT operator+(const Point<typename rectangle_dimension<RectangleT>::type> lhs, const RectangleT rhs)
+{
+    return rhs + lhs;
+}
+
+template <typename RectangleT>
+RectangleT& operator+=(RectangleT& lhs, const Point<typename rectangle_dimension<RectangleT>::type> rhs)
+{
+    return lhs = lhs + rhs;
+}
 
 using Color = SDL_Color;
 

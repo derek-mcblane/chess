@@ -165,6 +165,17 @@ class ChessApplication
         mouse_button_up_event_handlers_.add_handler([this](const SDL_MouseButtonEvent& event) {
             board_display_.on_button_up(event);
         });
+        window_resize_handlers_.add_handler([this](const SDL_WindowEvent& event) {
+            using namespace sdl;
+            const auto window_size = ::Point{event.data1, event.data2};
+            const auto min_dimension_size = std::min(window_size.x, window_size.y);
+            board_display_.pixel_size = {min_dimension_size, min_dimension_size};
+            board_display_.origin = {
+                (std::get<0>(window_.size()) - board_display_.pixel_size.x) / 2,
+                (std::get<1>(window_.size()) - board_display_.pixel_size.y) / 2};
+            board_display_.origin = (window_size - board_display_.pixel_size) / 2;
+            spdlog::debug("updated board_display_.origin={}", board_display_.origin);
+        });
     }
 
     void run()
@@ -193,6 +204,19 @@ class ChessApplication
         }
     }
 
+    void handle_window_events(const SDL_WindowEvent& event)
+    {
+        switch (event.event) {
+        case SDL_WINDOWEVENT_RESIZED:
+            spdlog::debug("SDL_WINDOWEVENT_RESIZED");
+            window_resize_handlers_.call_all(event);
+            break;
+        case SDL_WINDOWEVENT_SIZE_CHANGED:
+            spdlog::debug("SDL_WINDOWEVENT_SIZE_CHANGED");
+            break;
+        }
+    }
+
     void process_events()
     {
         while (auto event = sdl::poll_event()) {
@@ -200,10 +224,25 @@ class ChessApplication
             case SDL_QUIT:
                 quit_event_handlers_.call_all(event->quit);
                 break;
+            case SDL_WINDOWEVENT:
+                handle_window_events(event->window);
+                break;
             case SDL_MOUSEBUTTONDOWN:
+                spdlog::debug(
+                    "[SDL_MOUSEBUTTONDOWN button={}, position=[{},{}]]",
+                    event->button.button,
+                    event->button.x,
+                    event->button.y
+                );
                 mouse_button_down_event_handlers_.call_all(event->button);
                 break;
             case SDL_MOUSEBUTTONUP:
+                spdlog::debug(
+                    "[SDL_MOUSEBUTTONUP button={}, position=[{},{}]]",
+                    event->button.button,
+                    event->button.x,
+                    event->button.y
+                );
                 mouse_button_up_event_handlers_.call_all(event->button);
                 break;
             default:
@@ -217,24 +256,16 @@ class ChessApplication
         running_ = false;
     }
 
-    void update()
-    {
-        const auto min_dimension_size = std::min(std::get<0>(window_.size()), std::get<1>(window_.size()));
-        board_display_.pixel_size = {min_dimension_size, min_dimension_size};
-        board_offset_ = {
-            (std::get<0>(window_.size()) - board_display_.pixel_size.x) / 2,
-            (std::get<1>(window_.size()) - board_display_.pixel_size.y) / 2};
-    }
+    void update() {}
 
     void render_board()
     {
+        using namespace sdl;
         renderer_.set_draw_blend_mode(SDL_BLENDMODE_NONE);
         for (int col = 0; col < board_display_.grid_size.x; ++col) {
             for (int row = 0; row < board_display_.grid_size.y; ++row) {
                 renderer_.set_draw_color(((row + col) % 2 == 0) ? pallete::white : pallete::jasons_dumbass_blue);
-                auto cell = board_display_.grid_cell({row, col});
-                cell.x += board_offset_.x;
-                cell.y += board_offset_.y;
+                const auto cell = board_display_.grid_cell({row, col});
                 renderer_.fill_rectangle(cell);
             }
         }
@@ -244,14 +275,10 @@ class ChessApplication
         if (selected_piece_coordinate_.has_value() && selected_piece_valid_moves_.has_value()) {
             const auto selected_color = pallete::color_with_alpha(pallete::light_green, 0x7F);
             renderer_.set_draw_color(selected_color);
-            auto cell = board_display_.grid_cell(transform_chess_to_grid_view(*selected_piece_coordinate_));
-            cell.x += board_offset_.x;
-            cell.y += board_offset_.y;
+            const auto cell = board_display_.grid_cell(transform_chess_to_grid_view(*selected_piece_coordinate_));
             renderer_.fill_rectangle(cell);
             for (const auto move : selected_piece_valid_moves_->to_position_vector()) {
-                auto cell = board_display_.grid_cell(transform_chess_to_grid_view(move));
-                cell.x += board_offset_.x;
-                cell.y += board_offset_.y;
+                const auto cell = board_display_.grid_cell(transform_chess_to_grid_view(move));
                 renderer_.fill_rectangle(cell);
             }
         }
@@ -270,8 +297,8 @@ class ChessApplication
                 const auto piece_rect = pieces_sprite_map_.get_region(*piece);
                 const auto piece_position = board_display_.grid_cell_position(transform_chess_to_grid_view(coord));
                 const auto piece_size = board_display_.cell_size();
-                const auto screen_rect = sdl::Rectangle<int>{
-                    board_offset_.x + piece_position.x, board_offset_.y + piece_position.y, piece_size.x, piece_size.y};
+                const auto screen_rect =
+                    sdl::Rectangle<int>{piece_position.x, piece_position.y, piece_size.x, piece_size.y};
                 renderer_.copy<int>(pieces_sprites_, piece_rect, screen_rect);
             }
         }
@@ -289,8 +316,8 @@ class ChessApplication
     }
 
     static constexpr sdl::Rectangle<int> screen_region{0, 0, 480, 480};
-    static constexpr int max_frame_rate_per_second = 100;
-    static constexpr auto min_frame_period_ms = std::chrono::milliseconds(1'000) / max_frame_rate_per_second;
+    static constexpr int max_frames_per_second = 60;
+    static constexpr auto min_frame_period_ms = std::chrono::milliseconds(1'000) / max_frames_per_second;
     static constexpr auto window_config = sdl::WindowConfig{
         .title = "SDL Application",
         .x_position = SDL_WINDOWPOS_UNDEFINED,
@@ -309,7 +336,6 @@ class ChessApplication
 
     static constexpr auto board_size = 8;
     GridView board_display_{{board_size, board_size}, {screen_region.w, screen_region.h}};
-    sdl::Point<int> board_offset_;
 
     sdl::Texture pieces_sprites_{sdl::Texture{
         renderer_.make_texture_from_surface(sdl::image::load_image("resources/pieces_sprite_map.png").get())}};
@@ -340,6 +366,7 @@ class ChessApplication
     EventHandlers<SDL_QuitEvent> quit_event_handlers_;
     EventHandlers<SDL_MouseButtonEvent> mouse_button_down_event_handlers_;
     EventHandlers<SDL_MouseButtonEvent> mouse_button_up_event_handlers_;
+    EventHandlers<SDL_WindowEvent> window_resize_handlers_;
 };
 
 int main(int argc, char* argv[])

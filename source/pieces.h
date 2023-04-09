@@ -129,33 +129,40 @@ class BoardPieces
     inline static constexpr Position::dimension_type white_pawn_row{6};
     inline static constexpr Position::dimension_type kingside_rook_col{0};
     inline static constexpr Position::dimension_type queenside_rook_col{7};
-    inline static const Position black_king_position{0, 4};
-    inline static const Position black_queenside_rook_position{0, 0};
-    inline static const Position black_kingside_rook_position{0, 7};
-    inline static const Position white_king_position{7, 4};
-    inline static const Position white_queenside_rook_position{7, 0};
-    inline static const Position white_kingside_rook_position{7, 7};
 
     /*
-    inline static constexpr BitBoard white_castle_kingside_rook_move{0x00'00'00'00'00'00'00'04};
-    inline static constexpr BitBoard white_castle_queenside_rook_move{0x00'00'00'00'00'00'00'10};
-    inline static constexpr BitBoard black_castle_kingside_rook_move{0x04'00'00'00'00'00'00'00};
-    inline static constexpr BitBoard black_castle_queenside_rook_move{0x10'00'00'00'00'00'00'00};
+    inline static constexpr BitBoard black_king_position{0x08'00'00'00'00'00'00'00U};
+    inline static constexpr BitBoard black_kingside_rook_position{0x80'00'00'00'00'00'00'00U};
+    inline static constexpr BitBoard black_queenside_rook_position{0x01'00'00'00'00'00'00'00U};
+    inline static constexpr BitBoard black_castle_kingside_king_move{0x02'00'00'00'00'00'00'00U};
+    inline static constexpr BitBoard black_castle_queenside_king_move{0x20'00'00'00'00'00'00'00U};
+    inline static constexpr BitBoard black_castle_kingside_rook_move{0x04'00'00'00'00'00'00'00U};
+    inline static constexpr BitBoard black_castle_queenside_rook_move{0x10'00'00'00'00'00'00'00U};
 
-    inline static constexpr BitBoard white_castle_kingside_king_move{0x00'00'00'00'00'00'00'02};
-    inline static constexpr BitBoard white_castle_queenside_king_move{0x00'00'00'00'00'00'00'20};
-    inline static constexpr BitBoard black_castle_kingside_king_move{0x02'00'00'00'00'00'00'00};
-    inline static constexpr BitBoard black_castle_queenside_king_move{0x20'00'00'00'00'00'00'00};
+    inline static constexpr BitBoard white_king_position{0x00'00'00'00'00'00'00'08U};
+    inline static constexpr BitBoard white_kingside_rook_position{0x00'00'00'00'00'00'00'80U};
+    inline static constexpr BitBoard white_queenside_rook_position{0x00'00'00'00'00'00'00'01U};
+    inline static constexpr BitBoard white_castle_kingside_king_move{0x00'00'00'00'00'00'00'02U};
+    inline static constexpr BitBoard white_castle_queenside_king_move{0x00'00'00'00'00'00'00'20U};
+    inline static constexpr BitBoard white_castle_kingside_rook_move{0x00'00'00'00'00'00'00'04U};
+    inline static constexpr BitBoard white_castle_queenside_rook_move{0x00'00'00'00'00'00'00'10U};
     */
 
-    inline static const Position white_castle_kingside_king_move{7, 6};
-    inline static const Position white_castle_queenside_king_move{7, 2};
-    inline static const Position black_castle_kingside_king_move{1, 6};
-    inline static const Position black_castle_queenside_king_move{1, 2};
-    inline static const Position white_castle_kingside_rook_move{7, 5};
-    inline static const Position white_castle_queenside_rook_move{7, 3};
-    inline static const Position black_castle_kingside_rook_move{0, 5};
-    inline static const Position black_castle_queenside_rook_move{0, 3};
+    inline static constexpr Position black_king_position{0, 4};
+    inline static constexpr Position black_kingside_rook_position{0, 7};
+    inline static constexpr Position black_queenside_rook_position{0, 0};
+    inline static constexpr Position black_castle_kingside_king_move{0, 6};
+    inline static constexpr Position black_castle_queenside_king_move{0, 2};
+    inline static constexpr Position black_castle_kingside_rook_move{0, 5};
+    inline static constexpr Position black_castle_queenside_rook_move{0, 3};
+
+    inline static constexpr Position white_king_position{7, 4};
+    inline static constexpr Position white_kingside_rook_position{7, 7};
+    inline static constexpr Position white_queenside_rook_position{7, 0};
+    inline static constexpr Position white_castle_kingside_king_move{7, 6};
+    inline static constexpr Position white_castle_queenside_king_move{7, 2};
+    inline static constexpr Position white_castle_kingside_rook_move{7, 5};
+    inline static constexpr Position white_castle_queenside_rook_move{7, 3};
 
     std::vector<PieceMove> move_history_;
     std::map<Position, BitBoard> attacked_by_;

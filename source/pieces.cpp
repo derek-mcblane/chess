@@ -472,28 +472,28 @@ bool BoardPieces::is_pawn_start_square(const Position from) const
 bool BoardPieces::white_can_castle_kingside() const
 {
     static constexpr BitBoard between_squares{0x00'00'00'00'00'00'00'06};
-    static constexpr BitBoard king_squares{0x00'00'00'00'00'00'00'06};
+    static constexpr BitBoard king_squares{0x00'00'00'00'00'00'00'0E};
     return can_castle(between_squares, king_squares);
 }
 
 bool BoardPieces::white_can_castle_queenside() const
 {
     static constexpr BitBoard between_squares{0x00'00'00'00'00'00'00'70};
-    static constexpr BitBoard king_squares{0x00'00'00'00'00'00'00'30};
+    static constexpr BitBoard king_squares{0x00'00'00'00'00'00'00'38};
     return can_castle(between_squares, king_squares);
 }
 
 bool BoardPieces::black_can_castle_kingside() const
 {
     static constexpr BitBoard between_squares{0x06'00'00'00'00'00'00'00};
-    static constexpr BitBoard king_squares{0x06'00'00'00'00'00'00'00};
+    static constexpr BitBoard king_squares{0x0E'00'00'00'00'00'00'00};
     return can_castle(between_squares, king_squares);
 }
 
 bool BoardPieces::black_can_castle_queenside() const
 {
     static constexpr BitBoard between_squares{0x70'00'00'00'00'00'00'00};
-    static constexpr BitBoard king_squares{0x30'00'00'00'00'00'00'00};
+    static constexpr BitBoard king_squares{0x38'00'00'00'00'00'00'00};
     return can_castle(between_squares, king_squares);
 }
 

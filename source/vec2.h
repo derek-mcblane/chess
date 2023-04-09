@@ -16,9 +16,9 @@ class Vec2
   public:
     using dimension_type = T;
 
-    Vec2() : Vec2{0, 0} {}
-    Vec2(T x, T y) : elements_{x, y} {}
-    Vec2(std::initializer_list<T> list)
+    constexpr Vec2() : Vec2{0, 0} {}
+    constexpr Vec2(T x, T y) : elements_{x, y} {}
+    constexpr Vec2(std::initializer_list<T> list)
     {
         std::copy(list.begin(), list.end(), elements_.begin());
     }

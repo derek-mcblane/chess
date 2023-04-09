@@ -2,25 +2,41 @@
 
 #include "sdlpp.h"
 
+#include <spdlog/spdlog.h>
+
 using Point = GridView::Point;
 
 [[nodiscard]] sdl::Rectangle<int> GridView::grid_cell(Point index) const
 {
     using namespace sdl;
+    return grid_cell_local(index) + origin;
+}
+
+[[nodiscard]] sdl::Rectangle<int> GridView::grid_cell_local(Point index) const
+{
     const auto width = cell_size().x;
     const auto height = cell_size().y;
-    auto origin = offset + Point{index.x * width, index.y * height};
-    return {origin.x, origin.y, width, height};
+    return {index.x * width, index.y * height, width, height};
 }
 
 [[nodiscard]] Point GridView::grid_index(Point position) const
 {
     using namespace sdl;
-    position -= offset;
+    return grid_index_local(position - origin);
+}
+
+[[nodiscard]] Point GridView::grid_index_local(const Point position) const
+{
     return {position.x / cell_size().x, position.y / cell_size().y};
 }
 
 [[nodiscard]] Point GridView::grid_cell_position(Point index) const
+{
+    using namespace sdl;
+    return grid_cell_position_local(index) + origin;
+}
+
+[[nodiscard]] Point GridView::grid_cell_position_local(Point index) const
 {
     return {index.x * cell_size().x, index.y * cell_size().y};
 }
@@ -44,7 +60,8 @@ void GridView::on_button_down(const SDL_MouseButtonEvent& event)
 {
     using namespace sdl;
     selected_index_.reset();
-    Point clicked_index{grid_index(Point{event.x, event.y} - offset)};
+    const auto click_position = Point{event.x, event.y};
+    Point clicked_index{grid_index(click_position)};
     if (clicked_index.x < 0 || clicked_index.x >= grid_size.x) {
         return;
     }
@@ -57,7 +74,7 @@ void GridView::on_button_down(const SDL_MouseButtonEvent& event)
 void GridView::on_button_up(const SDL_MouseButtonEvent& event)
 {
     using namespace sdl;
-    const Point up_index = grid_index(Point{event.x, event.y} - offset);
+    const Point up_index = grid_index({event.x, event.y});
     if (up_index == down_index_.load()) {
         selected_index_ = up_index;
         if (on_cell_clicked_) {
