@@ -1,4 +1,3 @@
-#include "bit_board.h"
 #include "grid_view.h"
 #include "pieces.h"
 #include "sprite_map_grid.h"
@@ -80,6 +79,8 @@ namespace pallete {
 [[maybe_unused]] static constexpr sdl::Color blue{0x00, 0x00, 0xFF, 0xFF};
 [[maybe_unused]] static constexpr sdl::Color jasons_dumbass_blue{129, 152, 201, 0xFF};
 [[maybe_unused]] static constexpr sdl::Color light_green{169, 216, 145, 0xFF};
+[[maybe_unused]] static constexpr sdl::Color light_red{214, 32, 35, 0xFF};
+[[maybe_unused]] static constexpr sdl::Color light_purple{175, 41, 198, 0xFF};
 [[maybe_unused]] static constexpr sdl::Color gray{0x0F, 0x0F, 0x0F, 0xFF};
 [[maybe_unused]] static constexpr sdl::Color white{0xFF, 0xFF, 0xFF, 0xFF};
 
@@ -140,7 +141,7 @@ class ChessApplication
 
         const auto lock = std::lock_guard{pieces_mutex_};
         if (selected_piece_coordinate_.has_value() && selected_piece_valid_moves_.has_value()) {
-            if (!selected_piece_valid_moves_->test(coord)) {
+            if (!selected_piece_valid_moves_->contains(coord)) {
                 spdlog::debug("invalid move");
             } else {
                 spdlog::debug("moving from {} to {}", *selected_piece_coordinate_, coord);
@@ -151,7 +152,7 @@ class ChessApplication
         } else {
             if (pieces_.is_active_piece(coord)) {
                 selected_piece_coordinate_ = std::optional{coord};
-                selected_piece_valid_moves_ = pieces_.valid_moves(coord);
+                selected_piece_valid_moves_ = pieces_.valid_moves_set(coord);
             }
         }
     }
@@ -261,22 +262,28 @@ class ChessApplication
         for (int col = 0; col < board_display_.grid_size.x; ++col) {
             for (int row = 0; row < board_display_.grid_size.y; ++row) {
                 renderer_.set_draw_color(((row + col) % 2 == 0) ? pallete::white : pallete::jasons_dumbass_blue);
-                const auto cell = board_display_.grid_cell({row, col});
-                renderer_.fill_rectangle(cell);
+                renderer_.fill_rectangle(board_display_.grid_cell({row, col}));
             }
         }
 
         renderer_.set_draw_blend_mode(SDL_BLENDMODE_BLEND);
         const auto lock = std::lock_guard{pieces_mutex_};
         if (selected_piece_coordinate_.has_value() && selected_piece_valid_moves_.has_value()) {
-            const auto selected_color = pallete::color_with_alpha(pallete::light_green, 0x7F);
-            renderer_.set_draw_color(selected_color);
-            const auto cell = board_display_.grid_cell(transform_chess_to_grid_view(*selected_piece_coordinate_));
-            renderer_.fill_rectangle(cell);
-            for (const auto move : selected_piece_valid_moves_->to_position_vector()) {
-                const auto cell = board_display_.grid_cell(transform_chess_to_grid_view(move));
-                renderer_.fill_rectangle(cell);
+            renderer_.set_draw_color(pallete::color_with_alpha(pallete::light_green, 0x7F));
+            renderer_.fill_rectangle(board_display_.grid_cell(transform_chess_to_grid_view(*selected_piece_coordinate_)));
+            for (const auto move : *selected_piece_valid_moves_) {
+                renderer_.fill_rectangle(board_display_.grid_cell(transform_chess_to_grid_view(move)));
             }
+        }
+
+        for (const auto attacked_position : pieces_.attacked_by_black()) {
+            renderer_.set_draw_color(pallete::color_with_alpha(pallete::light_purple, 0x7F));
+            renderer_.fill_rectangle(board_display_.grid_cell(transform_chess_to_grid_view(attacked_position)));
+        }
+
+        for (const auto attacked_position : pieces_.attacked_by_white()) {
+            renderer_.set_draw_color(pallete::color_with_alpha(pallete::light_red, 0x7F));
+            renderer_.fill_rectangle(board_display_.grid_cell(transform_chess_to_grid_view(attacked_position)));
         }
     }
 
@@ -357,7 +364,7 @@ class ChessApplication
     std::mutex pieces_mutex_;
     BoardPieces pieces_{BoardPieces::make_standard_setup_board()};
     std::optional<Position> selected_piece_coordinate_;
-    std::optional<BitBoard> selected_piece_valid_moves_;
+    std::optional<std::set<Position>> selected_piece_valid_moves_;
 
     EventHandlers<SDL_QuitEvent> quit_event_handlers_;
     EventHandlers<SDL_MouseButtonEvent> mouse_button_down_event_handlers_;
@@ -370,7 +377,7 @@ int main(int argc, char* argv[])
     spdlog::set_level(spdlog::level::debug);
     sdl::Context global_setup{sdl::InitFlags::Video};
     sdl::image::Context global_image_setup{sdl::image::InitFlags::png};
-    SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "1");
+    //SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "1");
     ChessApplication{}.run();
     return 0;
 }

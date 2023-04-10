@@ -6,6 +6,7 @@
 #include <cassert>
 #include <map>
 #include <optional>
+#include <set>
 
 namespace chess {
 
@@ -109,9 +110,12 @@ class BoardPieces
     [[nodiscard]] std::optional<PieceType> piece_type_at(const Position& position) const;
     [[nodiscard]] std::optional<Piece> piece_at(const Position& position) const;
     [[nodiscard]] bool is_valid_move(Position from, Position to);
-    [[nodiscard]] BitBoard valid_moves(Position from);
+    [[nodiscard]] std::vector<BoardPieces::Position> valid_moves_vector(Position from);
+    [[nodiscard]] std::set<BoardPieces::Position> valid_moves_set(Position from);
     [[nodiscard]] PieceColor active_color() const;
     [[nodiscard]] bool is_active_piece(const Position& position) const;
+    [[nodiscard]] std::vector<BoardPieces::Position> attacked_by_white() const;
+    [[nodiscard]] std::vector<BoardPieces::Position> attacked_by_black() const;
 
     [[nodiscard]] static BoardPieces make_standard_setup_board();
 
@@ -164,7 +168,8 @@ class BoardPieces
 
     std::vector<PieceMove> move_history_;
     std::map<Position, BitBoard> attacked_by_;
-    BitBoard attacked_;
+    BitBoard attacked_by_black_;
+    BitBoard attacked_by_white_;
     BitBoard en_passant_square_;
     BitBoard pawns_;
     BitBoard knights_;
@@ -184,7 +189,8 @@ class BoardPieces
     [[nodiscard]] std::optional<Piece> piece_at(BitBoard position) const;
     [[nodiscard]] Piece piece_at_checked(BitBoard position) const;
     [[nodiscard]] BitBoard occupied_board() const;
-    [[nodiscard]] BitBoard attacked_board() const;
+    [[nodiscard]] BitBoard attacked_by_white_board() const;
+    [[nodiscard]] BitBoard attacked_by_black_board() const;
     [[nodiscard]] std::optional<PieceType> piece_type_at(BitBoard position) const;
     [[nodiscard]] bool is_pawn(BitBoard position) const;
     [[nodiscard]] bool is_knight(BitBoard position) const;
@@ -202,8 +208,7 @@ class BoardPieces
     void castle(PieceMove king_move);
     void white_castle(PieceMove king_move);
     void black_castle(PieceMove king_move);
-    void set_squares_attacked_by(const Position& position);
-    void clear_squares_attacked_by(const Position& position);
+    void update_attacked_squares();
     void update_en_passant_state(PieceMove move);
     void update_castling_state(PieceMove move);
 
@@ -216,28 +221,33 @@ class BoardPieces
     void move_black(BitBoard from, BitBoard to);
     void move_white(BitBoard from, BitBoard to);
 
-    [[nodiscard]] BitBoard pawn_moves(Position from) const;
-    [[nodiscard]] BitBoard knight_moves(Position from) const;
-    [[nodiscard]] BitBoard bishop_moves(Position from) const;
-    [[nodiscard]] BitBoard rook_moves(Position from) const;
-    [[nodiscard]] BitBoard queen_moves(Position from) const;
+    [[nodiscard]] BitBoard valid_moves_bitboard(Position from) const;
+    [[nodiscard]] BitBoard attacking_bitboard(Position from) const;
+    [[nodiscard]] BitBoard pawn_moves(Position from, PieceColor color) const;
+    [[nodiscard]] BitBoard pawn_attacking_squares(Position from, PieceColor color) const;
+    [[nodiscard]] BitBoard pawn_attacking_moves(Position from, PieceColor color) const;
+    [[nodiscard]] BitBoard knight_moves(Position from, PieceColor color) const;
+    [[nodiscard]] BitBoard bishop_moves(Position from, PieceColor color) const;
+    [[nodiscard]] BitBoard rook_moves(Position from, PieceColor color) const;
+    [[nodiscard]] BitBoard queen_moves(Position from, PieceColor color) const;
+    [[nodiscard]] BitBoard king_castling_moves(PieceColor color) const;
+    [[nodiscard]] BitBoard king_standard_moves(Position from, PieceColor color) const;
+    [[nodiscard]] BitBoard king_moves(Position from, PieceColor color) const;
     [[nodiscard]] bool white_can_castle_kingside() const;
     [[nodiscard]] bool white_can_castle_queenside() const;
+    [[nodiscard]] bool white_can_castle(BitBoard between_squares, BitBoard king_squares) const;
     [[nodiscard]] bool black_can_castle_kingside() const;
     [[nodiscard]] bool black_can_castle_queenside() const;
-    [[nodiscard]] bool can_castle(BitBoard between_squares, BitBoard king_squares) const;
+    [[nodiscard]] bool black_can_castle(BitBoard between_squares, BitBoard king_squares) const;
     [[nodiscard]] BitBoard black_king_castling_moves() const;
     [[nodiscard]] BitBoard white_king_castling_moves() const;
-    [[nodiscard]] BitBoard king_castling_moves() const;
-    [[nodiscard]] BitBoard king_moves(Position from) const;
-    [[nodiscard]] BitBoard valid_moves_bitboard(Position from) const;
 
     template <Direction D>
     [[nodiscard]] BitBoard sliding_moves(BitBoard from, size_t range = BitBoard::board_size) const;
-    [[nodiscard]] BitBoard sliding_moves(BitBoard from, Direction direction, size_t range = BitBoard::board_size) const;
+    [[nodiscard]] BitBoard sliding_moves(Direction direction, BitBoard from, size_t range = BitBoard::board_size) const;
     template <typename DirectionRange>
     [[nodiscard]] BitBoard
-    sliding_moves(Position from, DirectionRange&& directions, size_t range = BitBoard::board_size) const;
+    sliding_moves(DirectionRange&& directions, Position from, size_t range = BitBoard::board_size) const;
 
     [[nodiscard]] bool is_pawn_start_square(Position from) const;
     void remove_if_color(BitBoard& moves, PieceColor color) const;
@@ -252,29 +262,24 @@ class BoardPieces
 template <Direction D>
 [[nodiscard]] BitBoard BoardPieces::sliding_moves(const BitBoard from, const size_t range) const
 {
-    const auto from_color = piece_color_at(from);
-    if (!from_color.has_value()) {
-        assert(!"sliding moves from empty square");
-        return BitBoard{};
-    }
-    auto moves = from;
+    auto moves = BitBoard{from};
     for (size_t distance = 0; distance < range; ++distance) {
         moves.dilate<D>();
         if ((moves & ~from).test_any(occupied_board()) || moves.on_edge<D>()) {
             break;
         }
     }
-    return moves.clear(board_of_color(*from_color));
+    return moves.clear(from);
 }
 
 template <typename DirectionRange>
-[[nodiscard]] BitBoard BoardPieces::sliding_moves(const Position from, DirectionRange&& directions, size_t range) const
+[[nodiscard]] BitBoard BoardPieces::sliding_moves(DirectionRange&& directions, const Position from, size_t range) const
 {
     BitBoard moves;
     for (const auto direction : std::forward<DirectionRange>(directions)) {
-        moves.set(sliding_moves(BitBoard{from}, direction, range));
+        moves.set(sliding_moves(direction, BitBoard{from}, range));
     }
-    return moves.clear(from);
+    return moves;
 }
 
 } // namespace chess
