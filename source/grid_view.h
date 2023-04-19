@@ -1,34 +1,38 @@
 #pragma once
 
 #include "sdlpp.h"
+#include "widget.h"
 
 #include <atomic>
 #include <functional>
 
-class GridView
+class ClickableGrid : public Widget
 {
   public:
-    using Point = sdl::Point<int>;
     using OnClickedCallback = std::function<void(const Point&)>;
 
-    GridView() : GridView(Point{}, Point{}) {}
+    ClickableGrid(Point grid_size = Point{}, Region region = Region{}) : grid_size(grid_size), region(region) {}
 
-    GridView(Point grid_size, Point pixel_size) : grid_size(grid_size), pixel_size(pixel_size) {}
-
-    Point origin{0, 0};
     Point grid_size;
-    Point pixel_size;
+    Region region;
 
     [[nodiscard]] sdl::Rectangle<int> grid_cell(Point index) const;
     [[nodiscard]] Point grid_index(Point position) const;
     [[nodiscard]] Point grid_cell_position(Point index) const;
     [[nodiscard]] Point cell_size() const;
 
+    [[nodiscard]] Point origin() const
+    {
+        return sdl::Point<int>{region.x, region.y};
+    }
+
+    [[nodiscard]] Point size() const
+    {
+        return sdl::Point<int>{region.w, region.h};
+    }
+
     void set_on_cell_clicked_callback(OnClickedCallback&& callback);
     void clear_on_cell_clicked_callback();
-
-    void on_button_down(const SDL_MouseButtonEvent& event);
-    void on_button_up(const SDL_MouseButtonEvent& event);
 
   private:
     std::atomic<Point> down_index_;
@@ -38,4 +42,7 @@ class GridView
     [[nodiscard]] sdl::Rectangle<int> grid_cell_local(Point index) const;
     [[nodiscard]] Point grid_index_local(Point position) const;
     [[nodiscard]] Point grid_cell_position_local(Point index) const;
+
+    void on_button_down_impl(const SDL_MouseButtonEvent& event) override;
+    void on_button_up_impl(const SDL_MouseButtonEvent& event) override;
 };

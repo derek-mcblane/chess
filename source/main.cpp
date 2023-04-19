@@ -165,8 +165,10 @@ class ChessApplication
             using namespace sdl;
             const auto window_size = ::Point{event.data1, event.data2};
             const auto min_dimension_size = std::min(window_size.x, window_size.y);
-            board_display_.pixel_size = {min_dimension_size, min_dimension_size};
-            board_display_.origin = (window_size - board_display_.pixel_size) / 2;
+
+            const auto board_origin = (window_size - board_display_.size()) / 2;
+            const auto board_size = ::Point{min_dimension_size, min_dimension_size};
+            board_display_.region = {board_origin.x, board_origin.y, board_size.x, board_size.y};
         });
 
         mouse_button_down_event_handlers_.add_handler([this](const SDL_MouseButtonEvent& event) {
@@ -365,7 +367,7 @@ class ChessApplication
     sdl::Renderer renderer_{window_.get_pointer(), renderer_config};
 
     static constexpr auto board_size = 8;
-    GridView board_display_{{board_size, board_size}, {screen_region.w, screen_region.h}};
+    ClickableGrid board_display_{{board_size, board_size}, {0, 0, screen_region.w, screen_region.h}};
 
     sdl::Texture pieces_sprites_{sdl::Texture{
         renderer_.make_texture_from_surface(sdl::image::load_image("resources/pieces_sprite_map.png").get())}};

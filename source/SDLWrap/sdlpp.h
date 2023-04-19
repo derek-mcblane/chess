@@ -55,6 +55,24 @@ struct select_point<float>
 template <typename T>
 using Point = typename select_point<T>::type;
 
+template <typename Point>
+struct point_dimension;
+
+template <typename Point>
+using point_dimension_type = typename point_dimension<Point>::type;
+
+template <>
+struct point_dimension<SDL_Rect>
+{
+    using type = int;
+};
+
+template <>
+struct point_dimension<SDL_FRect>
+{
+    using type = float;
+};
+
 template <typename PointT>
 bool operator==(const PointT lhs, const PointT rhs)
 {
@@ -174,6 +192,9 @@ RectangleT& operator+=(RectangleT& lhs, const Point<typename rectangle_dimension
 {
     return lhs = lhs + rhs;
 }
+
+template <typename PointT, typename RectangleT>
+bool is_point_in_rectangle(PointT point, RectangleT rectangle);
 
 using Color = SDL_Color;
 

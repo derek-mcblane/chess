@@ -1,5 +1,7 @@
 #include "pieces.h"
 
+#include "bit_board.h"
+
 #include "bit_board_formatter.h"
 #include "piece_formatter.h"
 #include "vec2_formatter.h"
@@ -201,7 +203,7 @@ void BoardPieces::move(const BitBoard from, const BitBoard to)
 
 void BoardPieces::undo_previous_move()
 {
-    const auto& move = move_history_.back();
+    auto& move = move_history_.back();
     std::swap(move.to, move.from);
     move_history_.pop_back();
 }

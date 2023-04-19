@@ -117,6 +117,18 @@ bool push_event(SDL_Event& event)
     return status == 1;
 }
 
+template <>
+bool is_point_in_rectangle<Point<int>, Rectangle<int>>(const Point<int> point, const Rectangle<int> rectangle)
+{
+    return SDL_PointInRect(&point, &rectangle) == SDL_TRUE;
+}
+
+template <>
+bool is_point_in_rectangle<Point<float>, Rectangle<float>>(const Point<float> point, const Rectangle<float> rectangle)
+{
+    return SDL_PointInFRect(&point, &rectangle) == SDL_TRUE;
+}
+
 [[nodiscard]] WindowUniquePtr
 make_window(const char* title, int x_position, int y_position, int width, int height, Uint32 flags)
 {
