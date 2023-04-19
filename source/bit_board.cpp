@@ -219,16 +219,6 @@ BitBoard& BitBoard::shift_assign(const BitBoard::Position relative_offset)
     return *this;
 }
 
-BitBoard BitBoard::from_position(const Position& position)
-{
-    assert(position.x() < board_size);
-    assert(position.y() < board_size);
-    auto board = BitBoard::make_top_left();
-    board.bits_ >>= position.x() * board_size;
-    board.bits_ >>= position.y();
-    return board;
-}
-
 BitBoard BitBoard::neighbors_cardinal(const Position& position)
 {
     auto board = BitBoard{position};
@@ -249,12 +239,6 @@ BitBoard BitBoard::neighbors_cardinal_and_diagonal(const Position& position)
 std::size_t BitBoard::count() const
 {
     return std::popcount(bits_);
-}
-
-BitBoard::Position BitBoard::index_to_position(const std::size_t index)
-{
-    using T = Position::dimension_type;
-    return {static_cast<T>(index / board_size), static_cast<T>(index % board_size)};
 }
 
 BitBoard::Position BitBoard::to_position() const

@@ -33,32 +33,32 @@ class Vec2
         return {0, 1};
     }
 
-    [[nodiscard]] std::array<T, 2> elements() const noexcept
+    [[nodiscard]] constexpr std::array<T, 2> elements() const noexcept
     {
         return elements_;
     }
 
-    [[nodiscard]] std::array<T, 2> elements() noexcept
+    [[nodiscard]] constexpr std::array<T, 2>& elements() noexcept
     {
         return elements_;
     }
 
-    [[nodiscard]] T x() const noexcept
+    [[nodiscard]] constexpr T x() const noexcept
     {
         return elements_[x_axis];
     }
 
-    [[nodiscard]] T& x() noexcept
+    [[nodiscard]] constexpr T& x() noexcept
     {
         return elements_[x_axis];
     }
 
-    [[nodiscard]] T y() const noexcept
+    [[nodiscard]] constexpr T y() const noexcept
     {
         return elements_[y_axis];
     }
 
-    [[nodiscard]] T& y() noexcept
+    [[nodiscard]] constexpr T& y() noexcept
     {
         return elements_[y_axis];
     }

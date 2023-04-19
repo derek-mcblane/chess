@@ -38,3 +38,16 @@ class SpriteGrid
 
     [[nodiscard]] sdl::Rectangle<int> get_region(Point coordinate) const;
 };
+
+
+template <typename T>
+sdl::Rectangle<int> SpriteGrid<T>::get_region(Point coordinate) const
+{
+    return {.x = coordinate.x * pitch_.x, .y = coordinate.y * pitch_.y, .w = pitch_.x, .h = pitch_.y};
+}
+
+template <typename T>
+sdl::Rectangle<int> SpriteGrid<T>::get_region(const T& sprite)
+{
+    return get_region(coordinates_.at(sprite));
+}

@@ -41,75 +41,75 @@ class BitBoard
 
     static BitBoard make_top_right()
     {
-        return top_right;
+        return BitBoard{top_right};
     }
 
-    static BitBoard make_top_left()
+    static constexpr BitBoard make_top_left()
     {
-        return top_left;
+        return BitBoard{top_left};
     }
 
-    static BitBoard make_bottom_left()
+    static constexpr BitBoard make_bottom_left()
     {
-        return bottom_left;
+        return BitBoard{bottom_left};
     }
 
-    static BitBoard make_bottom_right()
+    static constexpr BitBoard make_bottom_right()
     {
-        return bottom_right;
+        return BitBoard{bottom_right};
     }
 
-    static BitBoard make_right_edge()
+    static constexpr BitBoard make_right_edge()
     {
-        return right_edge;
+        return BitBoard{right_edge};
     }
 
-    static BitBoard make_top_right_edge()
+    static constexpr BitBoard make_top_right_edge()
     {
-        return top_right_edge;
+        return BitBoard{top_right_edge};
     }
 
-    static BitBoard make_top_edge()
+    static constexpr BitBoard make_top_edge()
     {
-        return top_edge;
+        return BitBoard{top_edge};
     }
 
-    static BitBoard make_top_left_edge()
+    static constexpr BitBoard make_top_left_edge()
     {
-        return top_left_edge;
+        return BitBoard{top_left_edge};
     }
 
-    static BitBoard make_left_edge()
+    static constexpr BitBoard make_left_edge()
     {
-        return left_edge;
+        return BitBoard{left_edge};
     }
 
-    static BitBoard make_bottom_left_edge()
+    static constexpr BitBoard make_bottom_left_edge()
     {
-        return bottom_left_edge;
+        return BitBoard{bottom_left_edge};
     }
 
-    static BitBoard make_bottom_edge()
+    static constexpr BitBoard make_bottom_edge()
     {
-        return bottom_edge;
+        return BitBoard{bottom_edge};
     }
 
-    static BitBoard make_bottom_right_edge()
+    static constexpr BitBoard make_bottom_right_edge()
     {
-        return bottom_right_edge;
+        return BitBoard{bottom_right_edge};
     }
 
-    static BitBoard make_positive_slope()
+    static constexpr BitBoard make_positive_slope()
     {
-        return positive_slope;
+        return BitBoard{positive_slope};
     }
 
-    static BitBoard make_negative_slope()
+    static constexpr BitBoard make_negative_slope()
     {
-        return negative_slope;
+        return BitBoard{negative_slope};
     }
 
-    static BitBoard make_full()
+    static constexpr BitBoard make_full()
     {
         return ~BitBoard{};
     }
@@ -170,7 +170,7 @@ class BitBoard
         return clear(BitBoard{position});
     }
 
-    BitBoard& reset_all()
+    BitBoard& clear_all()
     {
         bits_ = 0U;
         return *this;
@@ -294,6 +294,27 @@ class BitBoard
     static constexpr Bits negative_slope = 0b10000000'01000000'00100000'00010000'00001000'00000100'00000010'00000001;
     static constexpr Bits positive_slope = 0b00000001'00000010'00000100'00001000'00010000'00100000'01000000'10000000;
 
-    static BitBoard from_position(const Position& position);
-    static Position index_to_position(std::size_t index);
+    inline static constexpr BitBoard from_position(const Position& position);
+    inline static constexpr Position index_to_position(std::size_t index);
+
+    friend void swap(BitBoard& lhs, BitBoard& rhs) {
+        std::swap(lhs.bits_, rhs.bits_);
+    }
 };
+
+constexpr BitBoard BitBoard::from_position(const Position& position)
+{
+    assert(position.x() < board_size);
+    assert(position.y() < board_size);
+    auto board = BitBoard::make_top_left();
+    board.bits_ >>= position.x() * board_size;
+    board.bits_ >>= position.y();
+    return board;
+}
+
+constexpr BitBoard::Position BitBoard::index_to_position(const std::size_t index)
+{
+    using T = Position::dimension_type;
+    return {static_cast<T>(index / board_size), static_cast<T>(index % board_size)};
+}
+

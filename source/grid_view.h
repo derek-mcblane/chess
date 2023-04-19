@@ -1,3 +1,5 @@
+#pragma once
+
 #include "sdlpp.h"
 
 #include <atomic>

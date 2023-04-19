@@ -18,6 +18,13 @@ target_include_directories(Pieces PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 target_link_libraries(Pieces PRIVATE spdlog::spdlog) 
 target_link_libraries(Pieces PRIVATE BitBoard)
 
+# Button
+add_library(Button button.cpp)
+target_include_directories(Button PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+target_link_libraries(Button PRIVATE spdlog::spdlog) 
+target_link_libraries(Button PRIVATE SDLWrap)
+target_link_libraries(Button PRIVATE SDLImageWrap)
+
 # SDLApp
 add_executable(SDLApp main.cpp grid_view.cpp)
 target_link_libraries(SDLApp PRIVATE Boost::headers)

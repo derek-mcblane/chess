@@ -92,36 +92,37 @@ namespace pallete {
 
 } // namespace pallete
 
-template <typename T>
-sdl::Rectangle<int> SpriteGrid<T>::get_region(Point coordinate) const
-{
-    return {.x = coordinate.x * pitch_.x, .y = coordinate.y * pitch_.y, .w = pitch_.x, .h = pitch_.y};
-}
-
-template <typename T>
-sdl::Rectangle<int> SpriteGrid<T>::get_region(const T& sprite)
-{
-    return get_region(coordinates_.at(sprite));
-}
-
 template <typename Event>
 class EventHandlers
 {
   public:
-    void add_handler(std::function<void(const Event&)>&& handler)
+    using HandlerID = size_t;
+    HandlerID add_handler(std::function<void(const Event&)>&& handler)
     {
-        handlers_.push_back(std::move(handler));
+        const size_t handler_id = next_id();
+        handlers_[handler_id] = std::move(handler);
+        return handler_id;
+    }
+
+    void remove_handler(HandlerID handler_id)
+    {
+        handlers_.erase(handler_id);
     }
 
     void call_all(const Event& event)
     {
-        for (const auto handler : handlers_) {
+        for (const auto& [_, handler] : handlers_) {
             handler(event);
         }
     }
 
   private:
-    std::vector<std::function<void(const Event&)>> handlers_;
+    std::map<HandlerID, std::function<void(const Event&)>> handlers_;
+
+    [[nodiscard]] HandlerID next_id() const
+    {
+        return handlers_.size();
+    }
 };
 
 class ChessApplication
@@ -160,18 +161,25 @@ class ChessApplication
     void initialize_event_handlers()
     {
         quit_event_handlers_.add_handler([this](const SDL_QuitEvent& event) { handle_quit_event(event); });
-        mouse_button_down_event_handlers_.add_handler([this](const SDL_MouseButtonEvent& event) {
-            board_display_.on_button_down(event);
-        });
-        mouse_button_up_event_handlers_.add_handler([this](const SDL_MouseButtonEvent& event) {
-            board_display_.on_button_up(event);
-        });
         window_resize_handlers_.add_handler([this](const SDL_WindowEvent& event) {
             using namespace sdl;
             const auto window_size = ::Point{event.data1, event.data2};
             const auto min_dimension_size = std::min(window_size.x, window_size.y);
             board_display_.pixel_size = {min_dimension_size, min_dimension_size};
             board_display_.origin = (window_size - board_display_.pixel_size) / 2;
+        });
+
+        mouse_button_down_event_handlers_.add_handler([this](const SDL_MouseButtonEvent& event) {
+            board_display_.on_button_down(event);
+        });
+        mouse_button_up_event_handlers_.add_handler([this](const SDL_MouseButtonEvent& event) {
+            board_display_.on_button_up(event);
+        });
+
+        key_down_event_handlers_.add_handler([this](const SDL_KeyboardEvent& event) {
+            if (event.keysym.sym == SDLK_a && event.repeat == 0) {
+                highlight_attacked_ = !highlight_attacked_;
+            }
         });
     }
 
@@ -214,6 +222,18 @@ class ChessApplication
         }
     }
 
+    void handle_keyboard_events(const SDL_KeyboardEvent& event)
+    {
+        switch (event.type) {
+        case SDL_KEYDOWN:
+            key_down_event_handlers_.call_all(event);
+            break;
+        case SDL_KEYUP:
+            key_up_event_handlers_.call_all(event);
+            break;
+        }
+    }
+
     void process_events()
     {
         while (auto event = sdl::poll_event()) {
@@ -241,6 +261,10 @@ class ChessApplication
                     event->button.y
                 );
                 mouse_button_up_event_handlers_.call_all(event->button);
+                break;
+            case SDL_KEYDOWN:
+            case SDL_KEYUP:
+                handle_keyboard_events(event->key);
                 break;
             default:
                 break;
@@ -270,20 +294,23 @@ class ChessApplication
         const auto lock = std::lock_guard{pieces_mutex_};
         if (selected_piece_coordinate_.has_value() && selected_piece_valid_moves_.has_value()) {
             renderer_.set_draw_color(pallete::color_with_alpha(pallete::light_green, 0x7F));
-            renderer_.fill_rectangle(board_display_.grid_cell(transform_chess_to_grid_view(*selected_piece_coordinate_)));
+            renderer_.fill_rectangle(board_display_.grid_cell(transform_chess_to_grid_view(*selected_piece_coordinate_))
+            );
             for (const auto move : *selected_piece_valid_moves_) {
                 renderer_.fill_rectangle(board_display_.grid_cell(transform_chess_to_grid_view(move)));
             }
         }
 
-        for (const auto attacked_position : pieces_.attacked_by_black()) {
-            renderer_.set_draw_color(pallete::color_with_alpha(pallete::light_purple, 0x7F));
-            renderer_.fill_rectangle(board_display_.grid_cell(transform_chess_to_grid_view(attacked_position)));
-        }
+        if (highlight_attacked_) {
+            for (const auto attacked_position : pieces_.attacked_by_black()) {
+                renderer_.set_draw_color(pallete::color_with_alpha(pallete::light_purple, 0x7F));
+                renderer_.fill_rectangle(board_display_.grid_cell(transform_chess_to_grid_view(attacked_position)));
+            }
 
-        for (const auto attacked_position : pieces_.attacked_by_white()) {
-            renderer_.set_draw_color(pallete::color_with_alpha(pallete::light_red, 0x7F));
-            renderer_.fill_rectangle(board_display_.grid_cell(transform_chess_to_grid_view(attacked_position)));
+            for (const auto attacked_position : pieces_.attacked_by_white()) {
+                renderer_.set_draw_color(pallete::color_with_alpha(pallete::light_red, 0x7F));
+                renderer_.fill_rectangle(board_display_.grid_cell(transform_chess_to_grid_view(attacked_position)));
+            }
         }
     }
 
@@ -365,11 +392,14 @@ class ChessApplication
     BoardPieces pieces_{BoardPieces::make_standard_setup_board()};
     std::optional<Position> selected_piece_coordinate_;
     std::optional<std::set<Position>> selected_piece_valid_moves_;
+    std::atomic_bool highlight_attacked_{false};
 
     EventHandlers<SDL_QuitEvent> quit_event_handlers_;
     EventHandlers<SDL_MouseButtonEvent> mouse_button_down_event_handlers_;
     EventHandlers<SDL_MouseButtonEvent> mouse_button_up_event_handlers_;
     EventHandlers<SDL_WindowEvent> window_resize_handlers_;
+    EventHandlers<SDL_KeyboardEvent> key_down_event_handlers_;
+    EventHandlers<SDL_KeyboardEvent> key_up_event_handlers_;
 };
 
 int main(int argc, char* argv[])
@@ -377,7 +407,7 @@ int main(int argc, char* argv[])
     spdlog::set_level(spdlog::level::debug);
     sdl::Context global_setup{sdl::InitFlags::Video};
     sdl::image::Context global_image_setup{sdl::image::InitFlags::png};
-    //SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "1");
+    // SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "1");
     ChessApplication{}.run();
     return 0;
 }

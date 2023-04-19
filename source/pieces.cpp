@@ -11,6 +11,7 @@
 #include <map>
 #include <optional>
 #include <set>
+#include <utility>
 
 namespace chess {
 
@@ -38,6 +39,11 @@ void BoardPieces::clear_pieces(const BitBoard board)
     rooks_.clear(board);
     queens_.clear(board);
     kings_.clear(board);
+}
+
+void BoardPieces::clear_piece(const Position& position)
+{
+    clear_pieces(position);
 }
 
 void BoardPieces::set_pieces(const Piece piece, const BitBoard positions)
@@ -76,11 +82,6 @@ void BoardPieces::set_pieces(const Piece piece, const BitBoard positions)
     }
 }
 
-void BoardPieces::clear_piece(const Position& position)
-{
-    clear_pieces(position);
-}
-
 void BoardPieces::set_piece(const Piece piece, const Position& position)
 {
     set_pieces(piece, BitBoard{position});
@@ -88,7 +89,7 @@ void BoardPieces::set_piece(const Piece piece, const Position& position)
 
 void BoardPieces::update_en_passant_state(const PieceMove move)
 {
-    en_passant_square_.reset_all();
+    en_passant_square_.clear_all();
     if (move.piece.type == PieceType::pawn) {
         const auto from_position = move.from.to_position();
         const auto to_position = move.to.to_position();
@@ -119,17 +120,6 @@ void BoardPieces::update_castling_state(const PieceMove move)
     if (move.from == BoardPieces::white_king_position) {
         white_queenside_castle_piece_moved_ = true;
         white_kingside_castle_piece_moved_ = true;
-    }
-}
-
-void BoardPieces::update_attacked_squares()
-{
-    for (const auto position : white_.to_position_vector()) {
-        attacked_by_white_.set(attacking_bitboard(position));
-    }
-
-    for (const auto position : black_.to_position_vector()) {
-        attacked_by_black_.set(attacking_bitboard(position));
     }
 }
 
@@ -206,18 +196,32 @@ void BoardPieces::move(const BitBoard from, const BitBoard to)
 
     update_en_passant_state(move);
     update_castling_state(move);
-    update_attacked_squares();
     move_history_.push_back(move);
+}
+
+void BoardPieces::undo_previous_move()
+{
+    const auto& move = move_history_.back();
+    std::swap(move.to, move.from);
+    move_history_.pop_back();
 }
 
 [[nodiscard]] BitBoard BoardPieces::attacked_by_black_board() const
 {
-    return attacked_by_black_;
+    BitBoard attacked_by_black;
+    for (const auto position : black_.to_position_vector()) {
+        attacked_by_black.set(attacking_bitboard(position));
+    }
+    return attacked_by_black;
 }
 
 [[nodiscard]] BitBoard BoardPieces::attacked_by_white_board() const
 {
-    return attacked_by_white_;
+    BitBoard attacked_by_white;
+    for (const auto position : white_.to_position_vector()) {
+        attacked_by_white.set(attacking_bitboard(position));
+    }
+    return attacked_by_white;
 }
 
 [[nodiscard]] std::vector<BoardPieces::Position> BoardPieces::attacked_by_white() const
@@ -445,7 +449,7 @@ bool BoardPieces::is_pawn_start_square(const Position from) const
         forward_moves = sliding_moves<down>(from_board, n_spaces).clear(occupied_board());
         break;
     }
-    return forward_moves;
+    return forward_moves | pawn_attacking_moves(from, color);
 }
 
 [[nodiscard]] BitBoard BoardPieces::pawn_attacking_moves(const Position from, const PieceColor color) const
@@ -532,28 +536,28 @@ bool BoardPieces::white_can_castle_kingside() const
 {
     static constexpr BitBoard between_squares{0x00'00'00'00'00'00'00'06};
     static constexpr BitBoard king_squares{0x00'00'00'00'00'00'00'0E};
-    return white_can_castle(between_squares, king_squares);
+    return !white_kingside_castle_piece_moved_ && white_can_castle(between_squares, king_squares);
 }
 
 bool BoardPieces::white_can_castle_queenside() const
 {
     static constexpr BitBoard between_squares{0x00'00'00'00'00'00'00'70};
     static constexpr BitBoard king_squares{0x00'00'00'00'00'00'00'38};
-    return white_can_castle(between_squares, king_squares);
+    return !white_queenside_castle_piece_moved_ && white_can_castle(between_squares, king_squares);
 }
 
 bool BoardPieces::black_can_castle_kingside() const
 {
     static constexpr BitBoard between_squares{0x06'00'00'00'00'00'00'00};
     static constexpr BitBoard king_squares{0x0E'00'00'00'00'00'00'00};
-    return black_can_castle(between_squares, king_squares);
+    return !black_kingside_castle_piece_moved_ && black_can_castle(between_squares, king_squares);
 }
 
 bool BoardPieces::black_can_castle_queenside() const
 {
     static constexpr BitBoard between_squares{0x70'00'00'00'00'00'00'00};
     static constexpr BitBoard king_squares{0x38'00'00'00'00'00'00'00};
-    return black_can_castle(between_squares, king_squares);
+    return !black_queenside_castle_piece_moved_ && black_can_castle(between_squares, king_squares);
 }
 
 bool BoardPieces::black_can_castle(const BitBoard between_squares, const BitBoard king_squares) const
@@ -733,7 +737,6 @@ BoardPieces BoardPieces::make_standard_setup_board()
         pieces.set_piece({PieceColor::white, back_row[column]}, {white_piece_row, column});
     }
 
-    pieces.update_attacked_squares();
     return pieces;
 }
 
