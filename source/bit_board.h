@@ -28,10 +28,10 @@ class BitBoard
     static constexpr std::size_t n_bits = 64;
     static_assert(sizeof(Bits) * CHAR_BIT == n_bits, "number of bits mismatch");
 
-    constexpr BitBoard() : BitBoard(0) {}
-    constexpr BitBoard(const Bits bits) : bits_(bits) {}
-    constexpr BitBoard(const Position& position) : BitBoard(from_position(position)) {}
-    BitBoard(const std::string& board);
+    constexpr explicit BitBoard() : BitBoard(0) {}
+    constexpr explicit BitBoard(const Bits bits) : bits_(bits) {}
+    constexpr explicit BitBoard(const Position& position) : BitBoard(from_position(position)) {}
+    explicit BitBoard(const std::string& board);
 
     constexpr BitBoard(const BitBoard& other) = default;
     constexpr BitBoard& operator=(const BitBoard&) = default;
@@ -98,6 +98,11 @@ class BitBoard
     {
         return BitBoard{bottom_right_edge};
     }
+
+    static constexpr BitBoard make_all_edge()
+    {
+        return BitBoard{all_edge};
+    } 
 
     static constexpr BitBoard make_positive_slope()
     {

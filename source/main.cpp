@@ -1,6 +1,8 @@
 #include "grid_view.h"
 #include "pieces.h"
+#include "board.h"
 #include "sprite_map_grid.h"
+#include "event_handlers.h"
 #include "timing.h"
 
 #include "vec2_formatter.h"
@@ -92,39 +94,6 @@ namespace pallete {
 
 } // namespace pallete
 
-template <typename Event>
-class EventHandlers
-{
-  public:
-    using HandlerID = size_t;
-    HandlerID add_handler(std::function<void(const Event&)>&& handler)
-    {
-        const size_t handler_id = next_id();
-        handlers_[handler_id] = std::move(handler);
-        return handler_id;
-    }
-
-    void remove_handler(HandlerID handler_id)
-    {
-        handlers_.erase(handler_id);
-    }
-
-    void call_all(const Event& event)
-    {
-        for (const auto& [_, handler] : handlers_) {
-            handler(event);
-        }
-    }
-
-  private:
-    std::map<HandlerID, std::function<void(const Event&)>> handlers_;
-
-    [[nodiscard]] HandlerID next_id() const
-    {
-        return handlers_.size();
-    }
-};
-
 class ChessApplication
 {
   public:
@@ -146,7 +115,13 @@ class ChessApplication
                 spdlog::debug("invalid move");
             } else {
                 spdlog::debug("moving from {} to {}", *selected_piece_coordinate_, coord);
-                pieces_.move(*selected_piece_coordinate_, coord);
+                const auto move = Board::Move{*selected_piece_coordinate_, coord};
+                if (pieces_.is_promotion_move(move)) {
+                    const std::optional<PieceType> promotion_piece = PieceType::queen;
+                    pieces_.promote({move, promotion_piece});
+                } else {
+                    pieces_.make_move(move);
+                }
             }
             selected_piece_coordinate_ = std::nullopt;
             selected_piece_valid_moves_ = std::nullopt;
@@ -168,7 +143,7 @@ class ChessApplication
 
             const auto board_origin = (window_size - board_display_.size()) / 2;
             const auto board_size = ::Point{min_dimension_size, min_dimension_size};
-            board_display_.region = {board_origin.x, board_origin.y, board_size.x, board_size.y};
+            board_display_.region() = {board_origin.x, board_origin.y, board_size.x, board_size.y};
         });
 
         mouse_button_down_event_handlers_.add_handler([this](const SDL_MouseButtonEvent& event) {
@@ -188,20 +163,20 @@ class ChessApplication
     void run()
     {
         while (running_) {
-            on_begin_frame();
+            begin_frame();
             update();
             if (window_.shown()) {
                 render();
             }
             process_events();
-            on_end_frame();
+            end_frame();
         }
     }
 
   private:
-    void on_begin_frame() {}
+    void begin_frame() {}
 
-    void on_end_frame()
+    void end_frame()
     {
         minimum_frame_delay_.end_interval();
         constexpr bool log_frame_duration = false;
@@ -318,6 +293,7 @@ class ChessApplication
 
     void render_pieces()
     {
+        renderer_.set_draw_blend_mode(SDL_BLENDMODE_NONE);
         for (int col = 0; col < board_display_.grid_size.x; ++col) {
             for (int row = 0; row < board_display_.grid_size.y; ++row) {
                 const auto coord = Position{row, col};
@@ -391,7 +367,7 @@ class ChessApplication
         }};
 
     std::mutex pieces_mutex_;
-    BoardPieces pieces_{BoardPieces::make_standard_setup_board()};
+    Board pieces_{Board::make_standard_setup_board()};
     std::optional<Position> selected_piece_coordinate_;
     std::optional<std::set<Position>> selected_piece_valid_moves_;
     std::atomic_bool highlight_attacked_{false};

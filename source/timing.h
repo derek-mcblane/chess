@@ -65,16 +65,16 @@ class Timer
 template <typename Duration>
 class MinimumPeriodWait
 {
-    using clock = std::chrono::steady_clock;
-    using time_point = std::chrono::time_point<clock>;
+    using Clock = std::chrono::steady_clock;
+    using TimePoint = std::chrono::time_point<Clock>;
 
   public:
-    MinimumPeriodWait(const Duration& period_duration) : beginning_{clock::now()}, period_duration_{period_duration} {}
+    MinimumPeriodWait(const Duration& period_duration) : beginning_{Clock::now()}, period_duration_{period_duration} {}
 
     void end_interval()
     {
         std::this_thread::sleep_until(beginning_ + period_duration_);
-        const auto now = clock::now();
+        const auto now = Clock::now();
         elapsed_ = std::chrono::duration_cast<Duration>(now - beginning_);
         beginning_ = now;
     }
@@ -85,7 +85,7 @@ class MinimumPeriodWait
     }
 
   private:
-    time_point beginning_;
+    TimePoint beginning_;
     Duration period_duration_;
     Duration elapsed_;
 };
@@ -93,6 +93,7 @@ class MinimumPeriodWait
 template <typename Rep, typename Period>
 Rep to_milliseconds(const std::chrono::duration<Rep, Period> duration)
 {
-    return std::chrono::duration_cast<std::chrono::milliseconds>(duration).count();
+    using namespace std::chrono;
+    return duration_cast<milliseconds>(duration).count();
 }
 

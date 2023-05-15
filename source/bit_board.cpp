@@ -22,49 +22,49 @@ BitBoard::BitBoard(const std::string& board)
 template <>
 bool BitBoard::on_edge<right>() const
 {
-    return (bits_ & right_edge) != 0U;
+    return test_any(make_right_edge());
 }
 
 template <>
 bool BitBoard::on_edge<upright>() const
 {
-    return (bits_ & top_right_edge) != 0U;
+    return test_any(make_top_right_edge());
 }
 
 template <>
 bool BitBoard::on_edge<up>() const
 {
-    return (bits_ & top_edge) != 0U;
+    return test_any(make_top_edge());
 }
 
 template <>
 bool BitBoard::on_edge<upleft>() const
 {
-    return (bits_ & top_left_edge) != 0U;
+    return test_any(make_top_left_edge());
 }
 
 template <>
 bool BitBoard::on_edge<left>() const
 {
-    return (bits_ & left_edge) != 0U;
+    return test_any(make_left_edge());
 }
 
 template <>
 bool BitBoard::on_edge<downright>() const
 {
-    return (bits_ & bottom_right_edge) != 0U;
+    return test_any(make_bottom_right_edge());
 }
 
 template <>
 bool BitBoard::on_edge<down>() const
 {
-    return (bits_ & bottom_edge) != 0U;
+    return test_any(make_bottom_edge());
 }
 
 template <>
 bool BitBoard::on_edge<downleft>() const
 {
-    return (bits_ & bottom_left_edge) != 0U;
+    return test_any(make_bottom_left_edge());
 }
 
 bool BitBoard::on_edge(const Direction direction) const
@@ -86,14 +86,15 @@ bool BitBoard::on_edge(const Direction direction) const
         return on_edge<down>();
     case downright:
         return on_edge<downright>();
+    default:
+        assert(!"invalid direction");
+        return {};
     }
-    assert(!"invalid direction");
-    return {};
 }
 
 bool BitBoard::on_any_edge() const
 {
-    return test_any(all_edge);
+    return test_any(make_all_edge());
 }
 
 BitBoard BitBoard::shift(BitBoard board, const Direction direction, const size_t n)

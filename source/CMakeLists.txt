@@ -12,21 +12,21 @@ add_library(BitBoard bit_board.cpp)
 target_include_directories(BitBoard PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 target_link_libraries(BitBoard PRIVATE spdlog::spdlog) 
 
-# Chess Pieces
-add_library(Pieces pieces.cpp)
-target_include_directories(Pieces PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
-target_link_libraries(Pieces PRIVATE spdlog::spdlog) 
-target_link_libraries(Pieces PRIVATE BitBoard)
+# Chess
+add_library(Chess pieces.cpp board.cpp)
+target_include_directories(Chess PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+target_link_libraries(Chess PRIVATE spdlog::spdlog) 
+target_link_libraries(Chess PRIVATE BitBoard)
 
-# Button
-add_library(Button button.cpp)
-target_include_directories(Button PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
-target_link_libraries(Button PRIVATE spdlog::spdlog) 
-target_link_libraries(Button PRIVATE SDLWrap)
-target_link_libraries(Button PRIVATE SDLImageWrap)
+# GUI Widgets
+add_library(GUIWidgets button.cpp grid_view.cpp)
+target_include_directories(GUIWidgets PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+target_link_libraries(GUIWidgets PRIVATE spdlog::spdlog) 
+target_link_libraries(GUIWidgets PRIVATE SDLWrap)
+target_link_libraries(GUIWidgets PRIVATE SDLImageWrap)
 
 # SDLApp
-add_executable(SDLApp main.cpp grid_view.cpp)
+add_executable(SDLApp main.cpp)
 target_link_libraries(SDLApp PRIVATE Boost::headers)
 target_link_libraries(SDLApp PRIVATE Microsoft.GSL::GSL)
 target_link_libraries(SDLApp PRIVATE spdlog::spdlog) 
@@ -34,4 +34,5 @@ target_link_libraries(SDLApp PRIVATE Eigen3::Eigen)
 target_link_libraries(SDLApp PRIVATE SDLWrap)
 target_link_libraries(SDLApp PRIVATE SDLImageWrap)
 target_link_libraries(SDLApp PRIVATE BitBoard)
-target_link_libraries(SDLApp PRIVATE Pieces)
+target_link_libraries(SDLApp PRIVATE Chess)
+target_link_libraries(SDLApp PRIVATE GUIWidgets)

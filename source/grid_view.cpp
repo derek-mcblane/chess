@@ -82,3 +82,14 @@ void ClickableGrid::on_button_up_impl(const SDL_MouseButtonEvent& event)
         }
     }
 }
+
+ClickableGrid::Region& ClickableGrid::region_impl()
+{
+    return region_;
+}
+[[nodiscard]] const ClickableGrid::Region& ClickableGrid::region_impl() const
+{
+    return region_;
+}
+
+void ClickableGrid::draw_impl(sdl::Renderer& renderer) const {};

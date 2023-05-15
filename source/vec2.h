@@ -3,10 +3,8 @@
 #include <cmath>
 
 #include <array>
-#include <functional>
 #include <iostream>
 #include <optional>
-#include <type_traits>
 
 namespace dm {
 
