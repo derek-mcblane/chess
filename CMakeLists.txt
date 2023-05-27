@@ -18,4 +18,4 @@ include(GoogleTest)
 
 add_subdirectory(source)
 add_subdirectory(tests)
-
+add_subdirectory(external)

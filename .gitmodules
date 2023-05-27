@@ -1,0 +1,3 @@
+[submodule "external/SDLWrap"]
+	path = external/SDLWrap
+	url = git@github.com:derek-mcblane/SDLWrap.git
