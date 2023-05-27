@@ -5,8 +5,6 @@ find_package(Eigen3 CONFIG REQUIRED)
 find_package(SDL2 REQUIRED COMPONENTS SDL2)
 find_package(SDL2_image REQUIRED COMPONENTS SDL2_image)
 
-add_subdirectory(SDLWrap)
-
 # BitBoard
 add_library(BitBoard bit_board.cpp)
 target_include_directories(BitBoard PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})

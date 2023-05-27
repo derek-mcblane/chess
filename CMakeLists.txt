@@ -16,6 +16,6 @@ FetchContent_MakeAvailable(googletest)
 include(CTest)
 include(GoogleTest)
 
+add_subdirectory(external)
 add_subdirectory(source)
 add_subdirectory(tests)
-add_subdirectory(external)
