@@ -102,7 +102,7 @@ class BitBoard
     static constexpr BitBoard make_all_edge()
     {
         return BitBoard{all_edge};
-    } 
+    }
 
     static constexpr BitBoard make_positive_slope()
     {
@@ -302,15 +302,17 @@ class BitBoard
     inline static constexpr BitBoard from_position(const Position& position);
     inline static constexpr Position index_to_position(std::size_t index);
 
-    friend void swap(BitBoard& lhs, BitBoard& rhs) {
+    friend void swap(BitBoard& lhs, BitBoard& rhs)
+    {
         std::swap(lhs.bits_, rhs.bits_);
     }
 };
 
 constexpr BitBoard BitBoard::from_position(const Position& position)
 {
-    assert(position.x() < board_size);
-    assert(position.y() < board_size);
+    if (position.x() < 0 || position.x() >= board_size || position.y() < 0 || position.y() >= board_size) {
+        throw std::invalid_argument("position outside of board");
+    }
     auto board = BitBoard::make_top_left();
     board.bits_ >>= position.x() * board_size;
     board.bits_ >>= position.y();
@@ -322,4 +324,3 @@ constexpr BitBoard::Position BitBoard::index_to_position(const std::size_t index
     using T = Position::dimension_type;
     return {static_cast<T>(index / board_size), static_cast<T>(index % board_size)};
 }
-
