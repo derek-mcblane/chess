@@ -1,3 +1,6 @@
 [submodule "external/SDLWrap"]
 	path = external/SDLWrap
 	url = git@github.com:derek-mcblane/SDLWrap.git
+[submodule "external/bit-board"]
+	path = external/bit-board
+	url = git@github.com:derek-mcblane/bit-board.git
