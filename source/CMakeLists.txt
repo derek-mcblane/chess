@@ -20,6 +20,10 @@ target_link_libraries(GUIWidgets PRIVATE spdlog::spdlog)
 target_link_libraries(GUIWidgets PRIVATE SDLWrap)
 target_link_libraries(GUIWidgets PRIVATE SDLImageWrap)
 
+add_library(Events INTERFACE)
+target_compile_features(Events INTERFACE cxx_std_20)
+target_include_directories(Events  INTERFACE ${CMAKE_CURRENT_SOURCE_DIR})
+
 # SDLApp
 add_executable(SDLApp main.cpp)
 target_compile_features(SDLApp PUBLIC cxx_std_20)
