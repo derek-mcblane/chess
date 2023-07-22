@@ -382,7 +382,7 @@ class ChessApplication
 
 int main(int argc, char* argv[])
 {
-    spdlog::set_level(spdlog::level::debug);
+    spdlog::cfg::load_env_levels();
     sdl::Context global_setup{sdl::InitFlags::Video};
     sdl::image::Context global_image_setup{sdl::image::InitFlags::png};
     // SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "1");
