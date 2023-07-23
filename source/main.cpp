@@ -213,7 +213,7 @@ class ChessApplication
 
     void process_events()
     {
-        while (auto event = sdl::poll_event()) {
+        while (const auto event = sdl::poll_event()) {
             switch (event->type) {
             case SDL_QUIT:
                 quit_event_handlers_.call_all(event->quit);
@@ -223,19 +223,17 @@ class ChessApplication
                 break;
             case SDL_MOUSEBUTTONDOWN:
                 spdlog::debug(
-                    "[SDL_MOUSEBUTTONDOWN button={}, position=[{},{}]]",
+                    "[SDL_MOUSEBUTTONDOWN button={}, position={}",
                     event->button.button,
-                    event->button.x,
-                    event->button.y
+                    Point{event->button.x, event->button.y}
                 );
                 mouse_button_down_event_handlers_.call_all(event->button);
                 break;
             case SDL_MOUSEBUTTONUP:
                 spdlog::debug(
-                    "[SDL_MOUSEBUTTONUP button={}, position=[{},{}]]",
+                    "[SDL_MOUSEBUTTONUP button={}, position={}",
                     event->button.button,
-                    event->button.x,
-                    event->button.y
+                    Point{event->button.x, event->button.y}
                 );
                 mouse_button_up_event_handlers_.call_all(event->button);
                 break;

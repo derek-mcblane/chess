@@ -159,7 +159,7 @@ void Board::castle(const BitBoardPieceMove king_move)
     }
 }
 
-void Board::make_move(Move move)
+void Board::make_move(const Move move)
 {
     assert(move.from != move.to && "move `from == to`");
     const auto piece = piece_at(move.from);
@@ -168,10 +168,12 @@ void Board::make_move(Move move)
     make_move({*piece, BitBoard{move.from}, BitBoard{move.to}});
 }
 
-void Board::make_move(BitBoardPieceMove piece_move)
+void Board::make_move(const BitBoardPieceMove piece_move)
 {
     assert(piece_move.from.count() == 1);
     assert(piece_move.to.count() == 1);
+
+    history_.push_back(BoardState(*this));
 
     // en passant capture
     if (piece_move.piece.type == PieceType::pawn && en_passant_square_.test_any(piece_move.to)) {
@@ -189,14 +191,12 @@ void Board::make_move(BitBoardPieceMove piece_move)
 
     update_en_passant_state(piece_move);
     update_castling_state(piece_move);
-    move_history_.push_back(piece_move);
 }
 
 void Board::undo_previous_move()
 {
-    auto& move = move_history_.back();
-    std::swap(move.to, move.from);
-    move_history_.pop_back();
+    set_state(history_.back());
+    history_.pop_back();
 }
 
 BitBoard Board::attacked_by_black_board() const
@@ -215,6 +215,41 @@ BitBoard Board::attacked_by_white_board() const
         attacked_by_white.set(attacking_bitboard(position));
     }
     return attacked_by_white;
+}
+
+BitBoard Board::attacked_by_active() const
+{
+    return active_color() == PieceColor::black ? attacked_by_black_board() : attacked_by_white_board();
+}
+
+BitBoard Board::attacked_by_opponent() const
+{
+    return active_color() == PieceColor::black ? attacked_by_white_board() : attacked_by_black_board() ;
+}
+
+bool Board::is_king_in_check() const {
+    const auto active_king = active_color_board() & kings_;
+    return active_king.test_any(attacked_by_opponent());
+}
+
+bool Board::is_in_checkmate() {
+    if (!is_king_in_check()) {
+        return false;
+    }
+    bool checkmate{true};
+    const auto king_position = (active_color_board() & kings_).to_position();
+    const auto king_piece = piece_at_checked(king_position);
+    for (const auto& [from, to_options] : all_valid_moves_bitboards()) {
+        for (const auto& to_option : to_options.to_position_vector()) {
+            Board test_board{*this};
+            test_board.make_move(Move{from, to_option});
+            if (!test_board.is_king_in_check()) {
+                checkmate = false;
+                break;
+            }
+        }
+    }
+    return checkmate;
 }
 
 std::vector<Board::Position> Board::attacked_by_white() const
@@ -341,60 +376,16 @@ std::optional<Piece> Board::piece_at(const BitBoard position) const
     return Piece{.color = *piece_color, .type = *piece_type};
 }
 
+Piece Board::piece_at_checked(const Position& position) const
+{
+    return piece_at_checked(BitBoard{position});
+}
+
 Piece Board::piece_at_checked(const BitBoard position) const
 {
     const auto piece = piece_at(position);
     assert(piece.has_value());
     return *piece;
-}
-
-// todo: update color boards
-void Board::move_pawn(const BitBoardMove move)
-{
-    pawns_.set(move.to);
-    pawns_.clear(move.from);
-}
-
-void Board::move_knight(const BitBoardMove move)
-{
-    knights_.set(move.to);
-    knights_.clear(move.from);
-}
-
-void Board::move_bishop(const BitBoardMove move)
-{
-    bishops_.set(move.to);
-    bishops_.clear(move.from);
-}
-
-void Board::move_rook(const BitBoardMove move)
-{
-    rooks_.set(move.to);
-    rooks_.clear(move.from);
-}
-
-void Board::move_queen(const BitBoardMove move)
-{
-    queens_.set(move.to);
-    queens_.clear(move.from);
-}
-
-void Board::move_king(const BitBoardMove move)
-{
-    kings_.set(move.to);
-    kings_.clear(move.from);
-}
-
-void Board::move_white(const BitBoardMove move)
-{
-    white_.set(move.to);
-    white_.clear(move.from);
-}
-
-void Board::move_black(const BitBoardMove move)
-{
-    black_.set(move.to);
-    black_.clear(move.from);
 }
 
 bool Board::is_valid_move(const Move move) const
@@ -610,7 +601,14 @@ BitBoard Board::king_standard_moves(const Position from, const PieceColor color)
 BitBoard Board::king_moves(const Position from, const PieceColor color) const
 {
     assert(is_king(BitBoard{from}) && "not a king");
-    return king_standard_moves(from, color) | king_castling_moves(color);
+    auto moves = king_standard_moves(from, color) | king_castling_moves(color);
+    for (const auto move : moves.to_position_vector()) {
+        Board test_board{*this};
+        test_board.make_move({from, move});
+        if (test_board.is_king_in_check()) {
+            moves.clear(move);
+        }
+    }
 }
 
 BitBoard Board::valid_moves_bitboard(const Position from) const
@@ -641,6 +639,15 @@ BitBoard Board::valid_moves_bitboard(const Position from) const
         break;
     }
     return moves.clear(board_of_color(piece->color));
+}
+
+std::map<Board::Position, BitBoard> Board::all_valid_moves_bitboards() const
+{
+    std::map<Position, BitBoard> moves;
+    for (const auto from : active_color_board().to_position_vector()) {
+        moves[from] = valid_moves_bitboard(from);
+    }
+    return moves;
 }
 
 BitBoard Board::attacking_bitboard(const Position from) const
@@ -724,6 +731,24 @@ BitBoard& Board::inactive_color_board()
 BitBoard Board::inactive_color_board() const
 {
     return board_of_color(opposite_color(active_color_));
+}
+
+void Board::set_state(const BoardState& state)
+{
+    en_passant_square_ = state.en_passant_square;
+    pawns_ = state.pawns;
+    knights_ = state.knights;
+    bishops_ = state.bishops;
+    rooks_ = state.rooks;
+    queens_ = state.queens;
+    kings_ = state.kings;
+    black_ = state.black;
+    white_ = state.white;
+    active_color_ = state.active_color;
+    black_queenside_castle_piece_moved_ = state.black_queenside_castle_piece_moved;
+    black_kingside_castle_piece_moved_ = state.black_kingside_castle_piece_moved;
+    white_queenside_castle_piece_moved_ = state.white_queenside_castle_piece_moved;
+    white_kingside_castle_piece_moved_ = state.white_kingside_castle_piece_moved;
 }
 
 Board Board::make_standard_setup_board()

@@ -1,8 +1,8 @@
 #pragma once
 
-#include "vec2.h"
 #include "bit_board.h"
 #include "pieces.h"
+#include "vec2.h"
 
 #include <optional>
 #include <set>
@@ -11,15 +11,52 @@ namespace chess {
 
 class Board
 {
+    struct BoardState
+    {
+        BoardState(const Board& board)
+            : en_passant_square{board.en_passant_square_},
+              pawns{board.pawns_},
+              knights{board.knights_},
+              bishops{board.bishops_},
+              rooks{board.rooks_},
+              queens{board.queens_},
+              kings{board.kings_},
+              black{board.black_},
+              white{board.white_},
+              active_color{board.active_color_},
+              black_queenside_castle_piece_moved{board.black_queenside_castle_piece_moved_},
+              black_kingside_castle_piece_moved{board.black_kingside_castle_piece_moved_},
+              white_queenside_castle_piece_moved{board.white_queenside_castle_piece_moved_},
+              white_kingside_castle_piece_moved{board.white_kingside_castle_piece_moved_}
+        {}
+
+        BitBoard en_passant_square;
+        BitBoard pawns;
+        BitBoard knights;
+        BitBoard bishops;
+        BitBoard rooks;
+        BitBoard queens;
+        BitBoard kings;
+        BitBoard black;
+        BitBoard white;
+        PieceColor active_color{PieceColor::white};
+        bool black_queenside_castle_piece_moved{false};
+        bool black_kingside_castle_piece_moved{false};
+        bool white_queenside_castle_piece_moved{false};
+        bool white_kingside_castle_piece_moved{false};
+    };
+
   public:
     using Position = BitBoard::Position;
 
-    struct Move {
+    struct Move
+    {
         Position from;
         Position to;
     };
 
-    struct PromotionMove {
+    struct PromotionMove
+    {
         Move move;
         std::optional<PieceType> promotion;
     };
@@ -27,7 +64,6 @@ class Board
     void set_piece(Piece piece, const Position& position);
     void make_move(Move move);
     void promote(PromotionMove move);
-    void undo_previous_move();
     void clear_piece(const Position& position);
     [[nodiscard]] bool occupied(const Position& position) const;
     [[nodiscard]] std::optional<PieceColor> piece_color_at(const Position& position) const;
@@ -79,7 +115,7 @@ class Board
     inline static constexpr BitBoard white_castle_kingside_rook_move{BitBoard::Position{7, 5}};
     inline static constexpr BitBoard white_castle_queenside_rook_move{BitBoard::Position{7, 3}};
 
-    std::vector<BitBoardPieceMove> move_history_;
+    std::vector<BoardState> history_;
     BitBoard en_passant_square_;
     BitBoard pawns_;
     BitBoard knights_;
@@ -97,18 +133,23 @@ class Board
 
     [[nodiscard]] bool occupied(BitBoard position) const;
     [[nodiscard]] std::optional<Piece> piece_at(BitBoard position) const;
+    [[nodiscard]] std::optional<PieceType> piece_type_at(BitBoard position) const;
+    [[nodiscard]] std::optional<PieceColor> piece_color_at(BitBoard position) const;
+    [[nodiscard]] Piece piece_at_checked(const Position& position) const;
     [[nodiscard]] Piece piece_at_checked(BitBoard position) const;
     [[nodiscard]] BitBoard occupied_board() const;
     [[nodiscard]] BitBoard attacked_by_white_board() const;
     [[nodiscard]] BitBoard attacked_by_black_board() const;
-    [[nodiscard]] std::optional<PieceType> piece_type_at(BitBoard position) const;
+    [[nodiscard]] BitBoard attacked_by_active() const;
+    [[nodiscard]] BitBoard attacked_by_opponent() const;
+    [[nodiscard]] bool is_king_in_check() const;
+    [[nodiscard]] bool is_in_checkmate();
     [[nodiscard]] bool is_pawn(BitBoard position) const;
     [[nodiscard]] bool is_knight(BitBoard position) const;
     [[nodiscard]] bool is_bishop(BitBoard position) const;
     [[nodiscard]] bool is_rook(BitBoard position) const;
     [[nodiscard]] bool is_queen(BitBoard position) const;
     [[nodiscard]] bool is_king(BitBoard position) const;
-    [[nodiscard]] std::optional<PieceColor> piece_color_at(BitBoard position) const;
     [[nodiscard]] bool is_black(BitBoard position) const;
     [[nodiscard]] bool is_white(BitBoard position) const;
     void clear_pieces(BitBoard board);
@@ -116,22 +157,15 @@ class Board
     void move_piece(BitBoardPieceMove move);
     void promote_piece(BitBoardMove move);
     void make_move(BitBoardPieceMove move);
+    void undo_previous_move();
     void castle(BitBoardPieceMove king_move);
     void white_castle(BitBoardPieceMove king_move);
     void black_castle(BitBoardPieceMove king_move);
     void update_en_passant_state(BitBoardPieceMove move);
     void update_castling_state(BitBoardPieceMove move);
 
-    void move_pawn(BitBoardMove move);
-    void move_knight(BitBoardMove move);
-    void move_bishop(BitBoardMove move);
-    void move_rook(BitBoardMove move);
-    void move_queen(BitBoardMove move);
-    void move_king(BitBoardMove move);
-    void move_black(BitBoardMove move);
-    void move_white(BitBoardMove move);
-
     [[nodiscard]] BitBoard valid_moves_bitboard(Position from) const;
+    [[nodiscard]] std::map<Position, BitBoard> all_valid_moves_bitboards() const;
     [[nodiscard]] BitBoard attacking_bitboard(Position from) const;
     [[nodiscard]] BitBoard pawn_moves(Position from, PieceColor color) const;
     [[nodiscard]] BitBoard pawn_attacking_squares(Position from, PieceColor color) const;
@@ -167,6 +201,8 @@ class Board
     [[nodiscard]] BitBoard& active_color_board();
     [[nodiscard]] BitBoard inactive_color_board() const;
     [[nodiscard]] BitBoard& inactive_color_board();
+
+    void set_state(const BoardState& state);
 };
 
 template <Direction D>
