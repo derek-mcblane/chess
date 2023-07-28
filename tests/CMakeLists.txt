@@ -7,13 +7,6 @@ set(gtest_force_shared_crt ON CACHE BOOL "" FORCE) # For Windows: Prevent overri
 FetchContent_MakeAvailable(googletest)
 include(GoogleTest)
 
-add_executable(EventTest "")
-target_sources(EventTest PRIVATE event_test.cpp)
-target_include_directories(EventTest PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
-target_link_libraries(EventTest PRIVATE gtest_main)
-target_link_libraries(EventTest PRIVATE Events)
-gtest_discover_tests(EventTest)
-
 add_executable(ChessTest "")
 target_sources(ChessTest PRIVATE chess_test.cpp)
 target_include_directories(ChessTest PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
