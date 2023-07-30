@@ -9,7 +9,7 @@ struct fmt::formatter<dm::Vec2<T>> : fmt::formatter<std::string>
 {
     auto format(dm::Vec2<T> point, format_context& ctx) -> decltype(ctx.out())
     {
-        return format_to(ctx.out(), "[Position x={}, y={}]", point.x(), point.y());
+        return fmt::format_to(ctx.out(), "[Position x={}, y={}]", point.x(), point.y());
     }
 };
 

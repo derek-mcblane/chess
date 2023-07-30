@@ -407,6 +407,8 @@ bool Board::is_promotion_move(const Move move) const
     case PieceColor::white:
         return move.to.x() == black_piece_row;
     }
+    assert(!"invalid piece color");
+    return {};
 }
 
 std::vector<Board::Position> Board::valid_moves_vector(const Position from)
@@ -589,6 +591,9 @@ BitBoard Board::king_castling_moves(const PieceColor color) const
         return white_king_castling_moves();
     case PieceColor::black:
         return black_king_castling_moves();
+    default:
+        assert(!"invalid piece color");
+        return BitBoard{};
     }
 }
 
@@ -609,6 +614,7 @@ BitBoard Board::king_moves(const Position from, const PieceColor color) const
             moves.clear(move);
         }
     }
+    return moves;
 }
 
 BitBoard Board::valid_moves_bitboard(const Position from) const
@@ -699,7 +705,9 @@ BitBoard Board::sliding_moves(const Direction direction, const BitBoard from, co
         return sliding_moves<down>(from, range);
     case downright:
         return sliding_moves<downright>(from, range);
-        break;
+    default:
+        assert(!"invalid direction");
+        return BitBoard{};
     }
 }
 

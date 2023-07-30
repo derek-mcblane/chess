@@ -3,6 +3,8 @@
 #include "vec2.h"
 
 #include <cassert>
+
+#include <exception>
 #include <map>
 #include <optional>
 #include <set>
@@ -23,6 +25,8 @@ inline PieceColor opposite_color(const PieceColor color)
         return PieceColor::white;
     case PieceColor::white:
         return PieceColor::black;
+    default:
+        throw std::runtime_error("invalid piece color");
     }
 }
 
