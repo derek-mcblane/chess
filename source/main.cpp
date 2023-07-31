@@ -384,8 +384,12 @@ class ChessApplication
 int main(int argc, char* argv[])
 {
     spdlog::cfg::load_env_levels();
-    sdl::Context global_setup{sdl::InitFlags::Video};
-    sdl::image::Context global_image_setup{sdl::image::InitFlags::png};
+
+    sdl::initialize(sdl::InitFlags::Video);
+    auto sdl_cleanup = gsl::finally([] { sdl::quit(); });
+    sdl::image::initialize(sdl::image::InitFlags::png);
+    auto sdl_image_cleanup = gsl::finally([] { sdl::image::quit(); });
+
     // SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "1");
 
     static constexpr auto window_config = sdl::WindowConfig{
@@ -408,7 +412,6 @@ int main(int argc, char* argv[])
 
     ImGui_ImplSDL2_InitForSDLRenderer(window.get_pointer(), renderer.get_pointer());
     auto imgui_sdl2_shutdown = gsl::finally([] { ImGui_ImplSDL2_Shutdown(); });
-
     ImGui_ImplSDLRenderer2_Init(renderer.get_pointer());
     auto imgui_sdl2_renderer_shutdown = gsl::finally([] { ImGui_ImplSDLRenderer2_Shutdown(); });
 
