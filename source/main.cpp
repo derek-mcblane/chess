@@ -5,14 +5,18 @@
 #include "event_handlers.h"
 #include "timing.h"
 
+#include <gsl/gsl>
+
+#include <spdlog/cfg/env.h>
+#include <spdlog/spdlog.h>
 #include "vec2_formatter.h"
 
 #include "sdlpp.h"
 #include "sdlpp_image.h"
 
-#include <gsl/gsl>
-#include <spdlog/cfg/env.h>
-#include <spdlog/spdlog.h>
+#include "backends/imgui_impl_sdl2.h"
+#include "backends/imgui_impl_sdlrenderer2.h"
+#include "imgui.h"
 
 #include <chrono>
 #include <exception>
@@ -97,8 +101,10 @@ namespace pallete {
 class ChessApplication
 {
   public:
-    ChessApplication()
+    ChessApplication(sdl::Window& window, sdl::Renderer& renderer)
+        : window_{window}, renderer_{renderer}, io_{ImGui::GetIO()}, board_display_{{board_size, board_size}, {0, 0, window.width(), window.height()}}
     {
+        IMGUI_CHECKVERSION();
         initialize_event_handlers();
         board_display_.set_on_cell_clicked_callback([this](const Point& point) { on_grid_cell_clicked(point); });
         process_events();
@@ -214,6 +220,7 @@ class ChessApplication
     void process_events()
     {
         while (const auto event = sdl::poll_event()) {
+            ImGui_ImplSDL2_ProcessEvent(&*event);
             switch (event->type) {
             case SDL_QUIT:
                 quit_event_handlers_.call_all(event->quit);
@@ -312,36 +319,32 @@ class ChessApplication
 
     void render()
     {
+        ImGui_ImplSDLRenderer2_NewFrame();
+        ImGui_ImplSDL2_NewFrame();
+        ImGui::NewFrame();
+        ImGui::Render();
+        renderer_.set_scale(io_.DisplayFramebufferScale.x, io_.DisplayFramebufferScale.y);
         renderer_.set_draw_color(pallete::white);
         renderer_.clear();
 
         render_board();
         render_pieces();
 
+        ImGui_ImplSDLRenderer2_RenderDrawData(ImGui::GetDrawData());
         renderer_.present();
     }
 
-    static constexpr sdl::Rectangle<int> screen_region{0, 0, 480, 480};
     static constexpr int max_frames_per_second = 60;
     static constexpr auto min_frame_period_ms = std::chrono::milliseconds(1'000) / max_frames_per_second;
-    static constexpr auto window_config = sdl::WindowConfig{
-        .title = "SDL Application",
-        .x_position = SDL_WINDOWPOS_UNDEFINED,
-        .y_position = SDL_WINDOWPOS_UNDEFINED,
-        .width = screen_region.w,
-        .height = screen_region.h,
-        .flags = SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE};
-    static constexpr auto renderer_config =
-        sdl::RendererConfig{.index = -1, .flags = SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC};
-
     std::atomic_bool running_{true};
     MinimumPeriodWait<std::chrono::milliseconds> minimum_frame_delay_{std::chrono::milliseconds{min_frame_period_ms}};
 
-    sdl::Window window_{window_config};
-    sdl::Renderer renderer_{window_.get_pointer(), renderer_config};
+    sdl::Window& window_;
+    sdl::Renderer& renderer_;
+    ImGuiIO& io_;
 
     static constexpr auto board_size = 8;
-    ClickableGrid board_display_{{board_size, board_size}, {0, 0, screen_region.w, screen_region.h}};
+    ClickableGrid board_display_;
 
     sdl::Texture pieces_sprites_{sdl::Texture{
         renderer_.make_texture_from_surface(sdl::image::load_image("resources/pieces_sprite_map.png").get())}};
@@ -384,6 +387,31 @@ int main(int argc, char* argv[])
     sdl::Context global_setup{sdl::InitFlags::Video};
     sdl::image::Context global_image_setup{sdl::image::InitFlags::png};
     // SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "1");
-    ChessApplication{}.run();
+
+    static constexpr auto window_config = sdl::WindowConfig{
+        .title = "Chess",
+        .x_position = SDL_WINDOWPOS_UNDEFINED,
+        .y_position = SDL_WINDOWPOS_UNDEFINED,
+        .width = 480,
+        .height = 480,
+        .flags = SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE};
+    static constexpr auto renderer_config =
+        sdl::RendererConfig{.index = -1, .flags = SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC};
+
+    sdl::Window window{window_config};
+    sdl::Renderer renderer{window.get_pointer(), renderer_config};
+
+    ImGui::CreateContext();
+    auto imgui_context_cleanup = gsl::finally([] { ImGui::DestroyContext(); });
+
+    ImGui::StyleColorsDark();
+
+    ImGui_ImplSDL2_InitForSDLRenderer(window.get_pointer(), renderer.get_pointer());
+    auto imgui_sdl2_shutdown = gsl::finally([] { ImGui_ImplSDL2_Shutdown(); });
+
+    ImGui_ImplSDLRenderer2_Init(renderer.get_pointer());
+    auto imgui_sdl2_renderer_shutdown = gsl::finally([] { ImGui_ImplSDLRenderer2_Shutdown(); });
+
+    ChessApplication{window, renderer}.run();
     return 0;
 }
