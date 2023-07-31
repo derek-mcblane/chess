@@ -1,0 +1,49 @@
+{
+  "version": 3,
+  "configurePresets": [
+    {
+      "name": "debug",
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/build/debug",
+      "installDir": "${sourceDir}/install/debug",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug"
+      }
+    },
+    {
+      "name": "release",
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/build/release",
+      "installDir": "${sourceDir}/install/release",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release"
+      }
+    },
+    {
+      "name": "VS",
+      "generator": "Visual Studio 17 2022",
+      "binaryDir": "${sourceDir}/build-VS",
+      "installDir": "${sourceDir}/install-VS"
+    }
+  ],
+  "buildPresets": [
+    {
+      "name": "debug",
+      "configurePreset": "debug"
+    },
+    {
+      "name": "release",
+      "configurePreset": "release"
+    },
+    {
+      "name": "VS-debug",
+      "configurePreset": "VS",
+      "configuration": "Debug"
+    },
+    {
+      "name": "VS-release",
+      "configurePreset": "VS",
+      "configuration": "Release"
+    }
+  ]
+}
