@@ -133,7 +133,6 @@ class ChessApplication
         IMGUI_CHECKVERSION();
         initialize_event_handlers();
         board_display_.set_on_cell_clicked_callback([this](const Point& point) { on_grid_cell_clicked(point); });
-        process_events();
     }
 
     void on_grid_cell_clicked(const Point& point)
@@ -169,17 +168,7 @@ class ChessApplication
     {
         quit_event_handlers_.add_handler([this](const SDL_QuitEvent& event) { handle_quit_event(event); });
         window_resize_handlers_.add_handler([this](const SDL_WindowEvent& event) {
-            using namespace sdl;
-            const auto window_size = ::Point{event.data1, event.data2};
-            const auto min_dimension_size = std::min(window_size.x, window_size.y);
-
-            const auto board_origin = (window_size - board_display_.size()) / 2;
-            const auto board_size = ::Point{min_dimension_size, min_dimension_size};
-            board_display_.region() = {board_origin.x, board_origin.y, board_size.x, board_size.y};
-
-            auto pieces_image = sdl::image::load_sized_svg( sprite_map_filename, board_display_.region().w, board_display_.region().w / 3);
-            auto pieces_texture = renderer_->make_texture_from_surface(pieces_image.get());
-            pieces_sprite_map_.texture() = sdl::Texture{std::move(pieces_texture)};
+            update_board_size({event.data1, event.data2});
         });
 
         mouse_button_down_event_handlers_.add_handler([this](const SDL_MouseButtonEvent& event) {
@@ -196,24 +185,48 @@ class ChessApplication
         });
     }
 
+    void update_board_size(std::tuple<int, int> window_size)
+    {
+        using namespace sdl;
+        const auto window_size_point = ::Point{std::get<0>(window_size), std::get<1>(window_size)};
+        const auto min_dimension_size = std::min(window_size_point.x, window_size_point.y);
+
+        const auto board_origin = (window_size_point - board_display_.size()) / 2;
+        const auto board_size = ::Point{min_dimension_size, min_dimension_size};
+        board_display_.region() = {board_origin.x, board_origin.y, board_size.x, board_size.y};
+
+        auto pieces_image =
+            sdl::image::load_sized_svg(sprite_map_filename, board_display_.region().w, board_display_.region().w / 3);
+        auto pieces_texture = renderer_->make_texture_from_surface(pieces_image.get());
+        pieces_sprite_map_.texture() = sdl::Texture{std::move(pieces_texture)};
+    }
+
     void run()
     {
         while (running_) {
-            begin_frame();
-            update();
+            process_events();
             if (window_->shown()) {
                 render();
             }
-            process_events();
-            end_frame();
         }
     }
 
   private:
-    void begin_frame() {}
-
-    void end_frame()
+    void begin_frame_render()
     {
+        ImGui_ImplSDLRenderer2_NewFrame();
+        ImGui_ImplSDL2_NewFrame();
+        ImGui::NewFrame();
+
+        renderer_->set_scale(ImGui::GetIO().DisplayFramebufferScale.x, ImGui::GetIO().DisplayFramebufferScale.y);
+        renderer_->set_draw_color(pallete::white);
+        renderer_->clear();
+    }
+
+    void end_frame_render()
+    {
+        renderer_->present();
+
         minimum_frame_delay_.end_interval();
         constexpr bool log_frame_duration = false;
         if (log_frame_duration) {
@@ -290,8 +303,6 @@ class ChessApplication
         running_ = false;
     }
 
-    void update() {}
-
     void render_board()
     {
         using namespace sdl;
@@ -350,21 +361,16 @@ class ChessApplication
 
     void render()
     {
-        ImGuiIO& io = ImGui::GetIO();
-        ImGui_ImplSDLRenderer2_NewFrame();
-        ImGui_ImplSDL2_NewFrame();
-        ImGui::NewFrame();
-        ImGui::Render();
-
-        renderer_->set_scale(io.DisplayFramebufferScale.x, io.DisplayFramebufferScale.y);
-        renderer_->set_draw_color(pallete::white);
-        renderer_->clear();
+        begin_frame_render();
 
         render_board();
         render_pieces();
 
+        ImGui::ShowDemoWindow(&show_demo_window_);
+        ImGui::Render();
         ImGui_ImplSDLRenderer2_RenderDrawData(ImGui::GetDrawData());
-        renderer_->present();
+
+        end_frame_render();
     }
 
     static constexpr int max_frames_per_second = 60;
@@ -377,6 +383,8 @@ class ChessApplication
 
     static constexpr auto board_size = 8;
     ClickableGrid board_display_;
+
+    bool show_demo_window_ = true;
 
     static constexpr const char* sprite_map_filename = "resources/pieces_sprite_map.svg";
     SpriteGrid<Piece> pieces_sprite_map_;
@@ -399,7 +407,7 @@ int main(int argc, char* argv[])
 {
     spdlog::cfg::load_env_levels();
 
-    sdl::initialize(sdl::InitFlags::Video);
+    sdl::initialize(sdl::InitFlags::video | sdl::InitFlags::events);
     auto sdl_cleanup = gsl::finally([] { sdl::quit(); });
     sdl::image::initialize(sdl::image::InitFlags::PNG);
     auto sdl_image_cleanup = gsl::finally([] { sdl::image::quit(); });
@@ -421,6 +429,10 @@ int main(int argc, char* argv[])
 
     ImGui::CreateContext();
     auto imgui_context_cleanup = gsl::finally([] { ImGui::DestroyContext(); });
+
+    ImGui::GetIO().ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
+    ImGui::GetIO().ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;
+    ImGui::GetIO().ConfigFlags |= ImGuiConfigFlags_DockingEnable;
 
     ImGui::StyleColorsDark();
 
