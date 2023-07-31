@@ -1,15 +1,15 @@
+#include "board.h"
+#include "event_handlers.h"
 #include "grid_view.h"
 #include "pieces.h"
-#include "board.h"
 #include "sprite_map_grid.h"
-#include "event_handlers.h"
 #include "timing.h"
 
 #include <gsl/gsl>
 
+#include "vec2_formatter.h"
 #include <spdlog/cfg/env.h>
 #include <spdlog/spdlog.h>
-#include "vec2_formatter.h"
 
 #include "sdlpp.h"
 #include "sdlpp_image.h"
@@ -279,8 +279,8 @@ class ChessApplication
         const auto lock = std::lock_guard{pieces_mutex_};
         if (selected_piece_coordinate_.has_value() && selected_piece_valid_moves_.has_value()) {
             renderer_->set_draw_color(pallete::color_with_alpha(pallete::light_green, 0x7F));
-            renderer_->fill_rectangle(board_display_.grid_cell(transform_chess_to_grid_view(*selected_piece_coordinate_))
-            );
+            renderer_->fill_rectangle(board_display_.grid_cell(transform_chess_to_grid_view(*selected_piece_coordinate_)
+            ));
             for (const auto move : *selected_piece_valid_moves_) {
                 renderer_->fill_rectangle(board_display_.grid_cell(transform_chess_to_grid_view(move)));
             }
