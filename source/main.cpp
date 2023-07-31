@@ -201,6 +201,7 @@ class ChessApplication
             break;
         case SDL_WINDOWEVENT_SIZE_CHANGED:
             spdlog::debug("SDL_WINDOWEVENT_SIZE_CHANGED");
+            window_resize_handlers_.call_all(event);
             break;
         }
     }
