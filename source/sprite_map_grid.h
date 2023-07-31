@@ -2,22 +2,6 @@
 
 #include <map>
 
-class SpriteMapGrid
-{
-    using Point = sdl::Point<int>;
-
-  public:
-    SpriteMapGrid(Point map_size, Point n_elements) : pitch_{map_size.x / n_elements.x, map_size.y / n_elements.y} {}
-
-    [[nodiscard]] sdl::Rectangle<int> get_region(Point coordinate) const
-    {
-        return {.x = coordinate.x * pitch_.x, .y = coordinate.y * pitch_.y, .w = pitch_.x, .h = pitch_.y};
-    }
-
-  private:
-    Point pitch_;
-};
-
 template <typename T>
 class SpriteGrid
 {
@@ -25,29 +9,48 @@ class SpriteGrid
     using Point = sdl::Point<int>;
     using CoordinateMap = std::map<T, Point>;
 
-    SpriteGrid(Point texture_size, Point grid_size, CoordinateMap&& sprite_coordinates)
-        : pitch_{texture_size.x / grid_size.x, texture_size.y / grid_size.y},
-          coordinates_{std::move(sprite_coordinates)}
+    SpriteGrid() = default;
+
+    SpriteGrid(Point grid_size, sdl::Texture&& texture, CoordinateMap&& sprite_coordinates)
+        : texture_{std::move(texture)},
+          coordinates_{std::move(sprite_coordinates)},
+          grid_size_{grid_size}
     {}
+
+    [[nodiscard]] const sdl::Texture& texture() const {
+        return texture_;
+    }
+
+    [[nodiscard]] sdl::Texture& texture() {
+        return texture_;
+    }
 
     [[nodiscard]] sdl::Rectangle<int> get_region(const T& sprite);
 
   private:
-    Point pitch_;
+    sdl::Texture texture_;
     CoordinateMap coordinates_;
+    Point grid_size_;
 
     [[nodiscard]] sdl::Rectangle<int> get_region(Point coordinate) const;
+    [[nodiscard]] Point pitch() const;
 };
-
 
 template <typename T>
 sdl::Rectangle<int> SpriteGrid<T>::get_region(Point coordinate) const
 {
-    return {.x = coordinate.x * pitch_.x, .y = coordinate.y * pitch_.y, .w = pitch_.x, .h = pitch_.y};
+    return {.x = coordinate.x * pitch().x, .y = coordinate.y * pitch().y, .w = pitch().x, .h = pitch().y};
 }
 
 template <typename T>
 sdl::Rectangle<int> SpriteGrid<T>::get_region(const T& sprite)
 {
     return get_region(coordinates_.at(sprite));
+}
+
+template <typename T>
+SpriteGrid<T>::Point SpriteGrid<T>::pitch() const
+{
+    const auto texture_size = texture_.size();
+    return {texture_size.x / grid_size_.x, texture_size.y / grid_size_.y};
 }

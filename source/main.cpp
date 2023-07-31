@@ -104,8 +104,32 @@ class ChessApplication
     ChessApplication(std::unique_ptr<sdl::Window> window, std::unique_ptr<sdl::Renderer> renderer)
         : window_{std::move(window)},
           renderer_{std::move(renderer)},
-          board_display_{{board_size, board_size}, {0, 0, window_->width(), window_->height()}}
+          board_display_{{board_size, board_size}, {0, 0, window_->width(), window_->height()}},
+          pieces_sprite_map_{
+              Point{6, 2},
+              sdl::Texture{renderer_->make_texture_from_surface(
+                  sdl::image::load_sized_svg(
+                      sprite_map_filename, board_display_.region().w, board_display_.region().w / 3
+                  )
+                      .get()
+              )},
+              {
+                  {{PieceColor::white, PieceType::king}, {0, 0}},
+                  {{PieceColor::white, PieceType::queen}, {1, 0}},
+                  {{PieceColor::white, PieceType::bishop}, {2, 0}},
+                  {{PieceColor::white, PieceType::knight}, {3, 0}},
+                  {{PieceColor::white, PieceType::rook}, {4, 0}},
+                  {{PieceColor::white, PieceType::pawn}, {5, 0}},
+                  {{PieceColor::black, PieceType::king}, {0, 1}},
+                  {{PieceColor::black, PieceType::queen}, {1, 1}},
+                  {{PieceColor::black, PieceType::bishop}, {2, 1}},
+                  {{PieceColor::black, PieceType::knight}, {3, 1}},
+                  {{PieceColor::black, PieceType::rook}, {4, 1}},
+                  {{PieceColor::black, PieceType::pawn}, {5, 1}},
+              }}
     {
+        assert(window_ != nullptr);
+        assert(renderer_ != nullptr);
         IMGUI_CHECKVERSION();
         initialize_event_handlers();
         board_display_.set_on_cell_clicked_callback([this](const Point& point) { on_grid_cell_clicked(point); });
@@ -152,6 +176,10 @@ class ChessApplication
             const auto board_origin = (window_size - board_display_.size()) / 2;
             const auto board_size = ::Point{min_dimension_size, min_dimension_size};
             board_display_.region() = {board_origin.x, board_origin.y, board_size.x, board_size.y};
+
+            auto pieces_image = sdl::image::load_sized_svg( sprite_map_filename, board_display_.region().w, board_display_.region().w / 3);
+            auto pieces_texture = renderer_->make_texture_from_surface(pieces_image.get());
+            pieces_sprite_map_.texture() = sdl::Texture{std::move(pieces_texture)};
         });
 
         mouse_button_down_event_handlers_.add_handler([this](const SDL_MouseButtonEvent& event) {
@@ -315,7 +343,7 @@ class ChessApplication
                 const auto piece_size = board_display_.cell_size();
                 const auto screen_rect =
                     sdl::Rectangle<int>{piece_position.x, piece_position.y, piece_size.x, piece_size.y};
-                renderer_->copy<int>(pieces_sprites_, piece_rect, screen_rect);
+                renderer_->copy<int>(pieces_sprite_map_.texture(), piece_rect, screen_rect);
             }
         }
     }
@@ -350,26 +378,8 @@ class ChessApplication
     static constexpr auto board_size = 8;
     ClickableGrid board_display_;
 
-    sdl::Texture pieces_sprites_{sdl::Texture{
-        renderer_->make_texture_from_surface(sdl::image::load_image("resources/pieces_sprite_map.png").get())}};
-
-    SpriteGrid<Piece> pieces_sprite_map_{
-        pieces_sprites_.size(),
-        Point{6, 2},
-        {
-            {{PieceColor::white, PieceType::king}, {0, 0}},
-            {{PieceColor::white, PieceType::queen}, {1, 0}},
-            {{PieceColor::white, PieceType::bishop}, {2, 0}},
-            {{PieceColor::white, PieceType::knight}, {3, 0}},
-            {{PieceColor::white, PieceType::rook}, {4, 0}},
-            {{PieceColor::white, PieceType::pawn}, {5, 0}},
-            {{PieceColor::black, PieceType::king}, {0, 1}},
-            {{PieceColor::black, PieceType::queen}, {1, 1}},
-            {{PieceColor::black, PieceType::bishop}, {2, 1}},
-            {{PieceColor::black, PieceType::knight}, {3, 1}},
-            {{PieceColor::black, PieceType::rook}, {4, 1}},
-            {{PieceColor::black, PieceType::pawn}, {5, 1}},
-        }};
+    static constexpr const char* sprite_map_filename = "resources/pieces_sprite_map.svg";
+    SpriteGrid<Piece> pieces_sprite_map_;
 
     std::mutex pieces_mutex_;
     Board pieces_{Board::make_standard_setup_board()};
@@ -391,10 +401,10 @@ int main(int argc, char* argv[])
 
     sdl::initialize(sdl::InitFlags::Video);
     auto sdl_cleanup = gsl::finally([] { sdl::quit(); });
-    sdl::image::initialize(sdl::image::InitFlags::png);
+    sdl::image::initialize(sdl::image::InitFlags::PNG);
     auto sdl_image_cleanup = gsl::finally([] { sdl::image::quit(); });
 
-    // SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "1");
+    SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "1");
 
     static constexpr auto window_config = sdl::WindowConfig{
         .title = "Chess",
