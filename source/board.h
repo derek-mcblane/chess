@@ -55,16 +55,9 @@ class Board
         Position to;
     };
 
-    struct PromotionMove
-    {
-        Move move;
-        std::optional<PieceType> promotion;
-    };
-
-    void set_piece(Piece piece, const Position& position);
-    void make_move(Move move);
-    void promote(PromotionMove move);
     void clear_piece(const Position& position);
+    void set_piece(Piece piece, const Position& position);
+    void make_move(Move move, std::optional<PieceType> promotion_selection=std::nullopt);
     [[nodiscard]] bool occupied(const Position& position) const;
     [[nodiscard]] std::optional<PieceColor> piece_color_at(const Position& position) const;
     [[nodiscard]] std::optional<PieceType> piece_type_at(const Position& position) const;
@@ -155,10 +148,9 @@ class Board
     void clear_pieces(BitBoard board);
     void set_pieces(Piece piece, BitBoard positions);
     void move_piece(BitBoardPieceMove move);
-    void promote_piece(BitBoardMove move);
-    void make_move(BitBoardPieceMove move);
-    void undo_previous_move();
+    void make_move(BitBoardPieceMove move, std::optional<PieceType> promotion_selection);
     void castle(BitBoardPieceMove king_move);
+    void undo_previous_move();
     void white_castle(BitBoardPieceMove king_move);
     void black_castle(BitBoardPieceMove king_move);
     void update_en_passant_state(BitBoardPieceMove move);

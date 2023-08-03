@@ -116,16 +116,6 @@ void Board::move_piece(const BitBoardPieceMove move)
     clear_pieces(move.from);
 }
 
-void Board::promote(PromotionMove move)
-{
-
-}
-
-void Board::promote_piece(const BitBoardMove move)
-{
-
-}
-
 void Board::white_castle(const BitBoardPieceMove king_move)
 {
     const auto white_moves = white_king_castling_moves();
@@ -159,17 +149,15 @@ void Board::castle(const BitBoardPieceMove king_move)
     }
 }
 
-void Board::make_move(const Move move)
+void Board::make_move(const Move move, std::optional<PieceType> promotion_selection)
 {
-    assert(move.from != move.to && "move `from == to`");
     const auto piece = piece_at(move.from);
-    assert(piece.has_value() && "move from empty square");
-    spdlog::debug("move(piece={}, from={}, to={})", *piece, move.from, move.to);
-    make_move({*piece, BitBoard{move.from}, BitBoard{move.to}});
+    make_move({piece_at_checked(move.from), BitBoard{move.from}, BitBoard{move.to}});
 }
 
-void Board::make_move(const BitBoardPieceMove piece_move)
+void Board::make_move(const BitBoardPieceMove piece_move, std::optional<PieceType> promotion_selection)
 {
+    assert(move.from != move.to && "move `from == to`");
     assert(piece_move.from.count() == 1);
     assert(piece_move.to.count() == 1);
 
@@ -224,15 +212,17 @@ BitBoard Board::attacked_by_active() const
 
 BitBoard Board::attacked_by_opponent() const
 {
-    return active_color() == PieceColor::black ? attacked_by_white_board() : attacked_by_black_board() ;
+    return active_color() == PieceColor::black ? attacked_by_white_board() : attacked_by_black_board();
 }
 
-bool Board::is_king_in_check() const {
+bool Board::is_king_in_check() const
+{
     const auto active_king = active_color_board() & kings_;
     return active_king.test_any(attacked_by_opponent());
 }
 
-bool Board::is_in_checkmate() {
+bool Board::is_in_checkmate()
+{
     if (!is_king_in_check()) {
         return false;
     }
