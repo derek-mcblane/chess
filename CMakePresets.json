@@ -1,5 +1,5 @@
 {
-  "version": 3,
+  "version": 6,
   "configurePresets": [
     {
       "name": "debug",
@@ -34,8 +34,18 @@
       "configurePreset": "debug"
     },
     {
+      "name": "debug-install",
+      "configurePreset": "debug",
+      "targets": "install"
+    },
+    {
       "name": "release",
       "configurePreset": "release"
+    },
+    {
+      "name": "release-install",
+      "configurePreset": "release",
+      "targets": "install"
     },
     {
       "name": "VS-debug",
@@ -46,6 +56,46 @@
       "name": "VS-release",
       "configurePreset": "VS",
       "configuration": "Release"
+    }
+  ],
+  "workflowPresets": [
+    {
+        "name": "release",
+        "displayName": "Release Build and Install",
+        "description": "configure, build, and install the release configuration",
+        "steps": [
+            {
+                "type": "configure",
+                "name": "release"
+            },
+            {
+                "type": "build",
+                "name": "release"
+            },
+            {
+                "type": "build",
+                "name": "release-install"
+            }
+        ]
+    },
+    {
+        "name": "debug",
+        "displayName": "Debug Build and Install",
+        "description": "configure, build, and install the debug configuration",
+        "steps": [
+            {
+                "type": "configure",
+                "name": "debug"
+            },
+            {
+                "type": "build",
+                "name": "debug"
+            },
+            {
+                "type": "build",
+                "name": "debug-install"
+            }
+        ]
     }
   ]
 }
