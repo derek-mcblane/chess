@@ -70,6 +70,9 @@ class Board
     [[nodiscard]] bool is_active_piece(const Position& position) const;
     [[nodiscard]] std::vector<Board::Position> attacked_by_white() const;
     [[nodiscard]] std::vector<Board::Position> attacked_by_black() const;
+    [[nodiscard]] bool is_in_check() const;
+    [[nodiscard]] bool is_in_checkmate() const;
+    [[nodiscard]] Board::Position active_king_position() const;
 
     [[nodiscard]] static Board make_standard_setup_board();
 
@@ -135,8 +138,6 @@ class Board
     [[nodiscard]] BitBoard attacked_by_black_board() const;
     [[nodiscard]] BitBoard attacked_by_active() const;
     [[nodiscard]] BitBoard attacked_by_opponent() const;
-    [[nodiscard]] bool is_king_in_check() const;
-    [[nodiscard]] bool is_in_checkmate();
     [[nodiscard]] bool is_pawn(BitBoard position) const;
     [[nodiscard]] bool is_knight(BitBoard position) const;
     [[nodiscard]] bool is_bishop(BitBoard position) const;

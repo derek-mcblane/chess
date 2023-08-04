@@ -214,31 +214,34 @@ BitBoard Board::attacked_by_opponent() const
     return active_color() == PieceColor::black ? attacked_by_white_board() : attacked_by_black_board();
 }
 
-bool Board::is_king_in_check() const
+bool Board::is_in_check() const
 {
     const auto active_king = active_color_board() & kings_;
     return active_king.test_any(attacked_by_opponent());
 }
 
-bool Board::is_in_checkmate()
+bool Board::is_in_checkmate() const
 {
-    if (!is_king_in_check()) {
+    if (!is_in_check()) {
         return false;
     }
-    bool checkmate{true};
     const auto king_position = (active_color_board() & kings_).to_position();
     const auto king_piece = piece_at_checked(king_position);
     for (const auto& [from, to_options] : all_valid_moves_bitboards()) {
         for (const auto& to_option : to_options.to_position_vector()) {
             Board test_board{*this};
             test_board.make_move(Move{from, to_option});
-            if (!test_board.is_king_in_check()) {
-                checkmate = false;
-                break;
+            if (!test_board.is_in_check()) {
+                return false;
             }
         }
     }
-    return checkmate;
+    return true;
+}
+
+Board::Position Board::active_king_position() const
+{
+    return (active_color_board() & kings_).to_position();
 }
 
 std::vector<Board::Position> Board::attacked_by_white() const
@@ -599,7 +602,7 @@ BitBoard Board::king_moves(const Position from, const PieceColor color) const
     for (const auto move : moves.to_position_vector()) {
         Board test_board{*this};
         test_board.make_move({from, move});
-        if (test_board.is_king_in_check()) {
+        if (test_board.is_in_check()) {
             moves.clear(move);
         }
     }
