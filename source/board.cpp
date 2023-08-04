@@ -160,7 +160,7 @@ void Board::make_move(const BitBoardPieceMove piece_move, std::optional<PieceTyp
     assert(piece_move.from.count() == 1);
     assert(piece_move.to.count() == 1);
 
-    history_.push_back(BoardState(*this));
+    history_.emplace_back(*this);
 
     // en passant capture
     if (piece_move.piece.type == PieceType::pawn && en_passant_square_.test_any(piece_move.to)) {
