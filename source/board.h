@@ -148,7 +148,7 @@ class Board
     void clear_pieces(BitBoard board);
     void set_pieces(Piece piece, BitBoard positions);
     void move_piece(BitBoardPieceMove move);
-    void make_move(BitBoardPieceMove move, std::optional<PieceType> promotion_selection);
+    void make_move(BitBoardPieceMove move, std::optional<PieceType> promotion_selection=std::nullopt);
     void castle(BitBoardPieceMove king_move);
     void undo_previous_move();
     void white_castle(BitBoardPieceMove king_move);

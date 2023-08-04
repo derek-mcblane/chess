@@ -146,14 +146,10 @@ class ChessApplication
             if (!selected_piece_valid_moves_->contains(coord)) {
                 spdlog::debug("invalid move");
             } else {
-                spdlog::debug("moving from {} to {}", *selected_piece_coordinate_, coord);
                 const auto move = Board::Move{*selected_piece_coordinate_, coord};
-                if (pieces_.is_promotion_move(move)) {
-                    const std::optional<PieceType> promotion_piece = PieceType::queen;
-                    pieces_.promote({move, promotion_piece});
-                } else {
-                    pieces_.make_move(move);
-                }
+                const auto promotion_piece =
+                    (pieces_.is_promotion_move(move)) ? std::optional<PieceType>{PieceType::queen} : std::nullopt;
+                pieces_.make_move(move, promotion_piece);
             }
             selected_piece_coordinate_ = std::nullopt;
             selected_piece_valid_moves_ = std::nullopt;

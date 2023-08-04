@@ -151,8 +151,7 @@ void Board::castle(const BitBoardPieceMove king_move)
 
 void Board::make_move(const Move move, std::optional<PieceType> promotion_selection)
 {
-    const auto piece = piece_at(move.from);
-    make_move({piece_at_checked(move.from), BitBoard{move.from}, BitBoard{move.to}});
+    make_move({piece_at_checked(move.from), BitBoard{move.from}, BitBoard{move.to}}, promotion_selection);
 }
 
 void Board::make_move(const BitBoardPieceMove piece_move, std::optional<PieceType> promotion_selection)
