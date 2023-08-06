@@ -27,6 +27,7 @@
 #include <string>
 #include <thread>
 
+namespace chrono = std::chrono;
 using namespace chess;
 using Position = dm::Vec2<int>;
 using Point = sdl::Point<int>;
@@ -206,13 +207,15 @@ class ChessApplication
         while (running_) {
             process_events();
             if (window_->shown()) {
-                render();
+                new_frame();
+                render_frame();
             }
+            minimum_period_delay_.wait_until_done_and_restart();
         }
     }
 
   private:
-    void begin_frame_render()
+    void new_frame()
     {
         ImGui_ImplSDLRenderer2_NewFrame();
         ImGui_ImplSDL2_NewFrame();
@@ -223,17 +226,74 @@ class ChessApplication
         renderer_->clear();
     }
 
-    void end_frame_render()
+    void render_frame()
     {
-        renderer_->present();
+        render_board();
+        render_pieces();
 
-        minimum_frame_delay_.end_interval();
-        constexpr bool log_frame_duration = false;
-        if (log_frame_duration) {
-            const auto frame_duration = minimum_frame_delay_.previous_interval_duration();
-            spdlog::debug("{} ms", to_milliseconds(frame_duration));
+        ImGui::ShowDemoWindow(&show_demo_window_);
+        ImGui::Render();
+        ImGui_ImplSDLRenderer2_RenderDrawData(ImGui::GetDrawData());
+
+        renderer_->present();
+    }
+
+    void render_board()
+    {
+        using namespace sdl;
+        renderer_->set_draw_blend_mode(SDL_BLENDMODE_NONE);
+        for (int col = 0; col < board_display_.grid_size.x; ++col) {
+            for (int row = 0; row < board_display_.grid_size.y; ++row) {
+                renderer_->set_draw_color(((row + col) % 2 == 0) ? pallete::white : pallete::jasons_dumbass_blue);
+                renderer_->fill_rectangle(board_display_.grid_cell({row, col}));
+            }
+        }
+
+        renderer_->set_draw_blend_mode(SDL_BLENDMODE_BLEND);
+        const auto lock = std::lock_guard{pieces_mutex_};
+        if (selected_piece_coordinate_.has_value() && selected_piece_valid_moves_.has_value()) {
+            renderer_->set_draw_color(pallete::color_with_alpha(pallete::light_green, 0x7F));
+            renderer_->fill_rectangle(board_display_.grid_cell(transform_chess_to_grid_view(*selected_piece_coordinate_)
+            ));
+            for (const auto move : *selected_piece_valid_moves_) {
+                renderer_->fill_rectangle(board_display_.grid_cell(transform_chess_to_grid_view(move)));
+            }
+        }
+
+        if (highlight_attacked_) {
+            for (const auto attacked_position : pieces_.attacked_by_black()) {
+                renderer_->set_draw_color(pallete::color_with_alpha(pallete::light_purple, 0x7F));
+                renderer_->fill_rectangle(board_display_.grid_cell(transform_chess_to_grid_view(attacked_position)));
+            }
+
+            for (const auto attacked_position : pieces_.attacked_by_white()) {
+                renderer_->set_draw_color(pallete::color_with_alpha(pallete::light_red, 0x7F));
+                renderer_->fill_rectangle(board_display_.grid_cell(transform_chess_to_grid_view(attacked_position)));
+            }
         }
     }
+
+    void render_pieces()
+    {
+        renderer_->set_draw_blend_mode(SDL_BLENDMODE_NONE);
+        for (int col = 0; col < board_display_.grid_size.x; ++col) {
+            for (int row = 0; row < board_display_.grid_size.y; ++row) {
+                const auto coord = Position{row, col};
+
+                const auto piece = pieces_.piece_at(coord);
+                if (!piece.has_value()) {
+                    continue;
+                }
+                const auto piece_rect = pieces_sprite_map_.get_region(*piece);
+                const auto piece_position = board_display_.grid_cell_position(transform_chess_to_grid_view(coord));
+                const auto piece_size = board_display_.cell_size();
+                const auto screen_rect =
+                    sdl::Rectangle<int>{piece_position.x, piece_position.y, piece_size.x, piece_size.y};
+                renderer_->copy<int>(pieces_sprite_map_.texture(), piece_rect, screen_rect);
+            }
+        }
+    }
+
 
     void handle_window_events(const SDL_WindowEvent& event)
     {
@@ -303,80 +363,12 @@ class ChessApplication
         running_ = false;
     }
 
-    void render_board()
-    {
-        using namespace sdl;
-        renderer_->set_draw_blend_mode(SDL_BLENDMODE_NONE);
-        for (int col = 0; col < board_display_.grid_size.x; ++col) {
-            for (int row = 0; row < board_display_.grid_size.y; ++row) {
-                renderer_->set_draw_color(((row + col) % 2 == 0) ? pallete::white : pallete::jasons_dumbass_blue);
-                renderer_->fill_rectangle(board_display_.grid_cell({row, col}));
-            }
-        }
-
-        renderer_->set_draw_blend_mode(SDL_BLENDMODE_BLEND);
-        const auto lock = std::lock_guard{pieces_mutex_};
-        if (selected_piece_coordinate_.has_value() && selected_piece_valid_moves_.has_value()) {
-            renderer_->set_draw_color(pallete::color_with_alpha(pallete::light_green, 0x7F));
-            renderer_->fill_rectangle(board_display_.grid_cell(transform_chess_to_grid_view(*selected_piece_coordinate_)
-            ));
-            for (const auto move : *selected_piece_valid_moves_) {
-                renderer_->fill_rectangle(board_display_.grid_cell(transform_chess_to_grid_view(move)));
-            }
-        }
-
-        if (highlight_attacked_) {
-            for (const auto attacked_position : pieces_.attacked_by_black()) {
-                renderer_->set_draw_color(pallete::color_with_alpha(pallete::light_purple, 0x7F));
-                renderer_->fill_rectangle(board_display_.grid_cell(transform_chess_to_grid_view(attacked_position)));
-            }
-
-            for (const auto attacked_position : pieces_.attacked_by_white()) {
-                renderer_->set_draw_color(pallete::color_with_alpha(pallete::light_red, 0x7F));
-                renderer_->fill_rectangle(board_display_.grid_cell(transform_chess_to_grid_view(attacked_position)));
-            }
-        }
-    }
-
-    void render_pieces()
-    {
-        renderer_->set_draw_blend_mode(SDL_BLENDMODE_NONE);
-        for (int col = 0; col < board_display_.grid_size.x; ++col) {
-            for (int row = 0; row < board_display_.grid_size.y; ++row) {
-                const auto coord = Position{row, col};
-
-                const auto piece = pieces_.piece_at(coord);
-                if (!piece.has_value()) {
-                    continue;
-                }
-                const auto piece_rect = pieces_sprite_map_.get_region(*piece);
-                const auto piece_position = board_display_.grid_cell_position(transform_chess_to_grid_view(coord));
-                const auto piece_size = board_display_.cell_size();
-                const auto screen_rect =
-                    sdl::Rectangle<int>{piece_position.x, piece_position.y, piece_size.x, piece_size.y};
-                renderer_->copy<int>(pieces_sprite_map_.texture(), piece_rect, screen_rect);
-            }
-        }
-    }
-
-    void render()
-    {
-        begin_frame_render();
-
-        render_board();
-        render_pieces();
-
-        ImGui::ShowDemoWindow(&show_demo_window_);
-        ImGui::Render();
-        ImGui_ImplSDLRenderer2_RenderDrawData(ImGui::GetDrawData());
-
-        end_frame_render();
-    }
-
-    static constexpr int max_frames_per_second = 60;
-    static constexpr auto min_frame_period_ms = std::chrono::milliseconds(1'000) / max_frames_per_second;
     std::atomic_bool running_{true};
-    MinimumPeriodWait<std::chrono::milliseconds> minimum_frame_delay_{std::chrono::milliseconds{min_frame_period_ms}};
+
+    using fp_milliseconds = chrono::duration<float, chrono::milliseconds::period>;
+    static constexpr int max_frames_per_second = 60;
+    static constexpr auto period_duration = fp_milliseconds{1000.0F / max_frames_per_second};
+    Timer minimum_period_delay_{period_duration};
 
     std::unique_ptr<sdl::Window> window_;
     std::unique_ptr<sdl::Renderer> renderer_;

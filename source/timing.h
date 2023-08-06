@@ -1,99 +1,85 @@
+#include <spdlog/spdlog.h>
+
 #include <chrono>
 #include <thread>
 
-template <typename Rep, typename Period>
 class Stopwatch
 {
-    using clock = std::chrono::steady_clock;
-    using time_point = std::chrono::time_point<clock>;
-    using duration = std::chrono::duration<Rep, Period>;
-
-    static constexpr auto zero_ms = std::chrono::milliseconds{0};
-
   public:
-    Stopwatch() : beginning_{clock::now()} {}
+    using Clock = std::chrono::steady_clock;
+    using TimePoint = Clock::time_point;
+    using Duration = Clock::duration;
 
-    void restart()
+    Stopwatch(TimePoint start_time = Clock::now()) : start_time_{start_time} {}
+
+    [[nodiscard]] TimePoint start_time() const
     {
-        beginning_ = clock::now();
+        return start_time_;
     }
 
-    duration elapsed() const
+    void restart(TimePoint start_time = Clock::now())
     {
-        return clock::now() - beginning_;
+        start_time_ = start_time;
+    }
+
+    [[nodiscard]] Duration elapsed() const
+    {
+        return std::chrono::duration_cast<Duration>(Clock::now() - start_time_);
     }
 
   private:
-    time_point beginning_;
+    TimePoint start_time_;
 };
 
-template <typename Rep, typename Period>
 class Timer
 {
-    using clock = std::chrono::steady_clock;
-    using time_point = std::chrono::time_point<clock>;
-    using duration = std::chrono::duration<Rep, Period>;
-
   public:
-    Timer(std::chrono::duration<Rep, Period> duration) : beginning_{clock::now()}, duration_{duration} {}
+    using Clock = std::chrono::steady_clock;
+    using TimePoint = Clock::time_point;
+    using Duration = Clock::duration;
 
-    void restart()
+    template <typename Rep, typename Period>
+    Timer(std::chrono::duration<Rep, Period> duration, TimePoint start_time = Clock::now())
+        : start_time_{start_time}, duration_{std::chrono::duration_cast<Duration>(duration)}
+    {}
+
+    void restart(TimePoint start_time = Clock::now())
     {
-        beginning_ = clock::now();
+        start_time_ = start_time;
     }
 
-    duration elapsed() const
+    [[nodiscard]] Duration elapsed() const
     {
-        return clock::now() - beginning_;
+        return Clock::now() - start_time_;
     }
 
-    duration remaining() const
+    [[nodiscard]] Duration remaining() const
     {
         return duration_ - elapsed();
     }
 
     [[nodiscard]] bool done() const
     {
-        return remaining() <= duration{0};
+        return remaining() <= Duration{0};
+    }
+
+    void wait_until_done() const
+    {
+        std::this_thread::sleep_until(done_time());
+    }
+
+    void wait_until_done_and_restart()
+    {
+        std::this_thread::sleep_until(done_time());
+        restart(done_time());
     }
 
   private:
-    time_point beginning_;
-    duration duration_;
-};
-
-template <typename Duration>
-class MinimumPeriodWait
-{
-    using Clock = std::chrono::steady_clock;
-    using TimePoint = std::chrono::time_point<Clock>;
-
-  public:
-    MinimumPeriodWait(const Duration& period_duration) : beginning_{Clock::now()}, period_duration_{period_duration} {}
-
-    void end_interval()
+    [[nodiscard]] TimePoint done_time() const
     {
-        std::this_thread::sleep_until(beginning_ + period_duration_);
-        const auto now = Clock::now();
-        elapsed_ = std::chrono::duration_cast<Duration>(now - beginning_);
-        beginning_ = now;
+        return start_time_ + duration_;
     }
 
-    [[nodiscard]] Duration previous_interval_duration() const noexcept
-    {
-        return elapsed_;
-    }
-
-  private:
-    TimePoint beginning_;
-    Duration period_duration_;
-    Duration elapsed_;
+    TimePoint start_time_;
+    Duration duration_;
 };
-
-template <typename Rep, typename Period>
-Rep to_milliseconds(const std::chrono::duration<Rep, Period> duration)
-{
-    using namespace std::chrono;
-    return duration_cast<milliseconds>(duration).count();
-}
-
