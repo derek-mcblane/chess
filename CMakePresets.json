@@ -53,9 +53,21 @@
       "configuration": "Debug"
     },
     {
+      "name": "VS-debug-install",
+      "configurePreset": "VS",
+      "configuration": "Debug",
+      "targets": "install"
+    },
+    {
       "name": "VS-release",
       "configurePreset": "VS",
       "configuration": "Release"
+    },
+    {
+      "name": "VS-release-install",
+      "configurePreset": "VS",
+      "configuration": "Release",
+      "targets": "install"
     }
   ],
   "workflowPresets": [
@@ -94,6 +106,44 @@
             {
                 "type": "build",
                 "name": "debug-install"
+            }
+        ]
+    },
+    {
+        "name": "VS-release",
+        "displayName": "Visual Studio Release Build and Install",
+        "description": "configure, build, and install the release configuration",
+        "steps": [
+            {
+                "type": "configure",
+                "name": "VS"
+            },
+            {
+                "type": "build",
+                "name": "VS-release"
+            },
+            {
+                "type": "build",
+                "name": "VS-release-install"
+            }
+        ]
+    },
+    {
+        "name": "VS-debug",
+        "displayName": "Visual Studio Debug Build and Install",
+        "description": "configure, build, and install the debug configuration",
+        "steps": [
+            {
+                "type": "configure",
+                "name": "VS"
+            },
+            {
+                "type": "build",
+                "name": "VS-debug"
+            },
+            {
+                "type": "build",
+                "name": "VS-debug-install"
             }
         ]
     }
