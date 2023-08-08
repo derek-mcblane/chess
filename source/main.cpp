@@ -255,8 +255,14 @@ class ChessApplication
             }
         }
 
-        if (pieces_.is_active_in_check()) {
+        if (pieces_.is_in_checkmate()) {
+            renderer_->set_draw_color(pallete::color_with_alpha(pallete::black, 0x7F));
+            renderer_->fill_rectangle(board_display_.grid_cell(transform_chess_to_grid_view(pieces_.active_king_position())));
+        } else if (pieces_.is_active_in_check()) {
             renderer_->set_draw_color(pallete::color_with_alpha(pallete::light_red, 0x7F));
+            renderer_->fill_rectangle(board_display_.grid_cell(transform_chess_to_grid_view(pieces_.active_king_position())));
+        } else if (pieces_.is_in_stalemate()) {
+            renderer_->set_draw_color(pallete::color_with_alpha(pallete::light_purple, 0x7F));
             renderer_->fill_rectangle(board_display_.grid_cell(transform_chess_to_grid_view(pieces_.active_king_position())));
         }
 
