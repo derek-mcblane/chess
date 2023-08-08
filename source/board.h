@@ -378,7 +378,7 @@ BitBoard Board::attacking_bitboard(const BitBoard from) const
 {
     BitBoard moves;
     const auto piece = piece_at(from);
-    if (active_color() != Color || !piece.has_value()) {
+    if (!piece.has_value()) {
         return moves;
     }
     assert(piece->color == Color);
