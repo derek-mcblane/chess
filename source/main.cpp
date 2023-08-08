@@ -227,6 +227,7 @@ class ChessApplication
         render_board();
         render_pieces();
 
+        ImGui::ShowDemoWindow(&show_demo_window_);
         ImGui::Render();
         ImGui_ImplSDLRenderer2_RenderDrawData(ImGui::GetDrawData());
 
@@ -380,6 +381,8 @@ class ChessApplication
 
     static constexpr auto board_size = 8;
     ClickableGrid board_display_;
+
+    bool show_demo_window_ = true;
 
     static constexpr const char* sprite_map_filename = "resources/pieces_sprite_map.svg";
     SpriteGrid<Piece> pieces_sprite_map_;
