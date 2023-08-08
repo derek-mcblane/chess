@@ -267,12 +267,12 @@ class ChessApplication
         }
 
         if (highlight_attacked_) {
-            for (const auto attacked_position : pieces_.attacked_by_black()) {
+            for (const auto attacked_position : pieces_.attacked_by_vector<PieceColor::black>()) {
                 renderer_->set_draw_color(pallete::color_with_alpha(pallete::light_purple, 0x7F));
                 renderer_->fill_rectangle(board_display_.grid_cell(transform_chess_to_grid_view(attacked_position)));
             }
 
-            for (const auto attacked_position : pieces_.attacked_by_white()) {
+            for (const auto attacked_position : pieces_.attacked_by_vector<PieceColor::white>()) {
                 renderer_->set_draw_color(pallete::color_with_alpha(pallete::light_red, 0x7F));
                 renderer_->fill_rectangle(board_display_.grid_cell(transform_chess_to_grid_view(attacked_position)));
             }

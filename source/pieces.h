@@ -18,16 +18,22 @@ enum class PieceColor : int
 };
 extern const std::map<PieceColor, std::string> piece_color_names;
 
+template <PieceColor Color>
+struct OppositeColor {
+    static const PieceColor value;
+};
+
+template <>
+inline const PieceColor OppositeColor<PieceColor::black>::value = PieceColor::white;
+template <>
+inline const PieceColor OppositeColor<PieceColor::white>::value = PieceColor::black;
+
+template <PieceColor Color>
+inline constexpr PieceColor opposite_color_v = OppositeColor<Color>::value;
+
 inline PieceColor opposite_color(const PieceColor color)
 {
-    switch (color) {
-    case PieceColor::black:
-        return PieceColor::white;
-    case PieceColor::white:
-        return PieceColor::black;
-    default:
-        throw std::runtime_error("invalid piece color");
-    }
+    return (color == PieceColor::black) ? PieceColor::white : PieceColor::black;
 }
 
 enum class PieceType : int
