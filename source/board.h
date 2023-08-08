@@ -72,6 +72,7 @@ class Board
     [[nodiscard]] std::vector<Board::Position> attacked_by_black() const;
     [[nodiscard]] bool is_in_check() const;
     [[nodiscard]] bool is_in_checkmate() const;
+    [[nodiscard]] bool is_in_stalemate() const;
     [[nodiscard]] Board::Position active_king_position() const;
 
     [[nodiscard]] static Board make_standard_setup_board();
@@ -151,8 +152,8 @@ class Board
     void update_castling_state(BitBoardPieceMove move);
 
     [[nodiscard]] BitBoard valid_moves_bitboard(BitBoard from) const;
-    [[nodiscard]] std::map<BitBoard, BitBoard> all_valid_moves_bitboards() const;
     [[nodiscard]] bool is_valid_move(BitBoardMove move) const;
+    [[nodiscard]] bool has_valid_move() const;
     [[nodiscard]] bool test_move_for_check(const BitBoardMove& move) const;
     [[nodiscard]] BitBoard attacking_bitboard(BitBoard from) const;
     [[nodiscard]] BitBoard pawn_moves(BitBoard from, PieceColor color) const;

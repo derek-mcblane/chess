@@ -234,19 +234,12 @@ bool Board::test_move_for_check(const BitBoardMove& move) const
 
 bool Board::is_in_checkmate() const
 {
-    if (!is_in_check()) {
-        return false;
-    }
-    const auto king_position = (active_color_board() & kings_).to_position();
-    const auto king_piece = piece_at_checked(king_position);
-    for (const auto& [from, to_options] : all_valid_moves_bitboards()) {
-        for (const auto& to_option : to_options.to_bitboard_vector()) {
-            if (!test_move_for_check({from, to_option})) {
-                return false;
-            }
-        }
-    }
-    return true;
+    return is_in_check() && !has_valid_move();
+}
+
+bool Board::is_in_stalemate() const
+{
+    return !is_in_check() && !has_valid_move();
 }
 
 Board::Position Board::active_king_position() const
@@ -602,17 +595,21 @@ BitBoard Board::valid_moves_bitboard(const BitBoard from) const
         moves = king_moves(from, piece->color);
         break;
     }
-    //TODO: remove moves in check
+
+    for (const auto to : moves.to_bitboard_vector()) {
+        if (test_move_for_check({from, to})) {
+            moves.clear(to);
+        }
+    }
+
     return moves.clear(board_of_color(piece->color));
 }
 
-std::map<BitBoard, BitBoard> Board::all_valid_moves_bitboards() const
+bool Board::has_valid_move() const
 {
-    std::map<BitBoard, BitBoard> moves;
-    for (const auto from : active_color_board().to_bitboard_vector()) {
-        moves[from] = valid_moves_bitboard(from);
-    }
-    return moves;
+    return std::ranges::any_of(active_color_board().to_bitboard_vector(), [this](const auto from) {
+        return !valid_moves_bitboard(from).empty();
+    });
 }
 
 BitBoard Board::attacking_bitboard(const BitBoard from) const
