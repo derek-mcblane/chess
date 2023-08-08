@@ -11,41 +11,6 @@ namespace chess {
 
 class Board
 {
-    struct BoardState
-    {
-        BoardState(const Board& board)
-            : en_passant_square{board.en_passant_square_},
-              pawns{board.pawns_},
-              knights{board.knights_},
-              bishops{board.bishops_},
-              rooks{board.rooks_},
-              queens{board.queens_},
-              kings{board.kings_},
-              black{board.black_},
-              white{board.white_},
-              active_color{board.active_color_},
-              black_queenside_castle_piece_moved{board.black_queenside_castle_piece_moved_},
-              black_kingside_castle_piece_moved{board.black_kingside_castle_piece_moved_},
-              white_queenside_castle_piece_moved{board.white_queenside_castle_piece_moved_},
-              white_kingside_castle_piece_moved{board.white_kingside_castle_piece_moved_}
-        {}
-
-        BitBoard en_passant_square;
-        BitBoard pawns;
-        BitBoard knights;
-        BitBoard bishops;
-        BitBoard rooks;
-        BitBoard queens;
-        BitBoard kings;
-        BitBoard black;
-        BitBoard white;
-        PieceColor active_color{PieceColor::white};
-        bool black_queenside_castle_piece_moved{false};
-        bool black_kingside_castle_piece_moved{false};
-        bool white_queenside_castle_piece_moved{false};
-        bool white_kingside_castle_piece_moved{false};
-    };
-
   public:
     using Position = BitBoard::Position;
 
@@ -90,6 +55,42 @@ class Board
         BitBoard from;
         BitBoard to;
     };
+
+    struct BoardState
+    {
+        BoardState(const Board& board)
+            : en_passant_square{board.en_passant_square_},
+              pawns{board.pawns_},
+              knights{board.knights_},
+              bishops{board.bishops_},
+              rooks{board.rooks_},
+              queens{board.queens_},
+              kings{board.kings_},
+              black{board.black_},
+              white{board.white_},
+              active_color{board.active_color_},
+              black_queenside_castle_piece_moved{board.black_queenside_castle_piece_moved_},
+              black_kingside_castle_piece_moved{board.black_kingside_castle_piece_moved_},
+              white_queenside_castle_piece_moved{board.white_queenside_castle_piece_moved_},
+              white_kingside_castle_piece_moved{board.white_kingside_castle_piece_moved_}
+        {}
+
+        BitBoard en_passant_square;
+        BitBoard pawns;
+        BitBoard knights;
+        BitBoard bishops;
+        BitBoard rooks;
+        BitBoard queens;
+        BitBoard kings;
+        BitBoard black;
+        BitBoard white;
+        PieceColor active_color{PieceColor::white};
+        bool black_queenside_castle_piece_moved{false};
+        bool black_kingside_castle_piece_moved{false};
+        bool white_queenside_castle_piece_moved{false};
+        bool white_kingside_castle_piece_moved{false};
+    };
+
 
     inline static constexpr Position::dimension_type black_piece_row{0};
     inline static constexpr Position::dimension_type black_pawn_row{1};
