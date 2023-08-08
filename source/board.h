@@ -57,7 +57,7 @@ class Board
 
     void clear_piece(const Position& position);
     void set_piece(Piece piece, const Position& position);
-    void make_move(Move move, std::optional<PieceType> promotion_selection=std::nullopt);
+    void make_move(Move move, std::optional<PieceType> promotion_selection = std::nullopt);
     [[nodiscard]] bool occupied(const Position& position) const;
     [[nodiscard]] std::optional<PieceColor> piece_color_at(const Position& position) const;
     [[nodiscard]] std::optional<PieceType> piece_type_at(const Position& position) const;
@@ -138,18 +138,11 @@ class Board
     [[nodiscard]] BitBoard attacked_by_black_board() const;
     [[nodiscard]] BitBoard attacked_by_active() const;
     [[nodiscard]] BitBoard attacked_by_opponent() const;
-    [[nodiscard]] bool is_pawn(BitBoard position) const;
-    [[nodiscard]] bool is_knight(BitBoard position) const;
-    [[nodiscard]] bool is_bishop(BitBoard position) const;
-    [[nodiscard]] bool is_rook(BitBoard position) const;
-    [[nodiscard]] bool is_queen(BitBoard position) const;
-    [[nodiscard]] bool is_king(BitBoard position) const;
-    [[nodiscard]] bool is_black(BitBoard position) const;
-    [[nodiscard]] bool is_white(BitBoard position) const;
     void clear_pieces(BitBoard board);
     void set_pieces(Piece piece, BitBoard positions);
     void move_piece(BitBoardPieceMove move);
-    void make_move(BitBoardPieceMove move, std::optional<PieceType> promotion_selection=std::nullopt);
+    void make_move(BitBoardMove move, std::optional<PieceType> promotion_selection = std::nullopt);
+    void make_move(BitBoardPieceMove move, std::optional<PieceType> promotion_selection = std::nullopt);
     void castle(BitBoardPieceMove king_move);
     void undo_previous_move();
     void white_castle(BitBoardPieceMove king_move);
@@ -157,19 +150,21 @@ class Board
     void update_en_passant_state(BitBoardPieceMove move);
     void update_castling_state(BitBoardPieceMove move);
 
-    [[nodiscard]] BitBoard valid_moves_bitboard(Position from) const;
-    [[nodiscard]] std::map<Position, BitBoard> all_valid_moves_bitboards() const;
-    [[nodiscard]] BitBoard attacking_bitboard(Position from) const;
-    [[nodiscard]] BitBoard pawn_moves(Position from, PieceColor color) const;
-    [[nodiscard]] BitBoard pawn_attacking_squares(Position from, PieceColor color) const;
-    [[nodiscard]] BitBoard pawn_attacking_moves(Position from, PieceColor color) const;
-    [[nodiscard]] BitBoard knight_moves(Position from, PieceColor color) const;
-    [[nodiscard]] BitBoard bishop_moves(Position from, PieceColor color) const;
-    [[nodiscard]] BitBoard rook_moves(Position from, PieceColor color) const;
-    [[nodiscard]] BitBoard queen_moves(Position from, PieceColor color) const;
+    [[nodiscard]] BitBoard valid_moves_bitboard(BitBoard from) const;
+    [[nodiscard]] std::map<BitBoard, BitBoard> all_valid_moves_bitboards() const;
+    [[nodiscard]] bool is_valid_move(BitBoardMove move) const;
+    [[nodiscard]] bool test_move_for_check(const BitBoardMove& move) const;
+    [[nodiscard]] BitBoard attacking_bitboard(BitBoard from) const;
+    [[nodiscard]] BitBoard pawn_moves(BitBoard from, PieceColor color) const;
+    [[nodiscard]] BitBoard pawn_attacking_squares(BitBoard from, PieceColor color) const;
+    [[nodiscard]] BitBoard pawn_attacking_moves(BitBoard from, PieceColor color) const;
+    [[nodiscard]] BitBoard knight_moves(BitBoard from, PieceColor color) const;
+    [[nodiscard]] BitBoard bishop_moves(BitBoard from, PieceColor color) const;
+    [[nodiscard]] BitBoard rook_moves(BitBoard from, PieceColor color) const;
+    [[nodiscard]] BitBoard queen_moves(BitBoard from, PieceColor color) const;
     [[nodiscard]] BitBoard king_castling_moves(PieceColor color) const;
-    [[nodiscard]] BitBoard king_standard_moves(Position from, PieceColor color) const;
-    [[nodiscard]] BitBoard king_moves(Position from, PieceColor color) const;
+    [[nodiscard]] BitBoard king_standard_moves(BitBoard from, PieceColor color) const;
+    [[nodiscard]] BitBoard king_moves(BitBoard from, PieceColor color) const;
     [[nodiscard]] bool white_can_castle_kingside() const;
     [[nodiscard]] bool white_can_castle_queenside() const;
     [[nodiscard]] bool white_can_castle(BitBoard between_squares, BitBoard king_squares) const;
@@ -184,9 +179,9 @@ class Board
     [[nodiscard]] BitBoard sliding_moves(Direction direction, BitBoard from, size_t range = BitBoard::board_size) const;
     template <typename DirectionRange>
     [[nodiscard]] BitBoard
-    sliding_moves(DirectionRange&& directions, Position from, size_t range = BitBoard::board_size) const;
+    sliding_moves(DirectionRange&& directions, BitBoard from, size_t range = BitBoard::board_size) const;
 
-    [[nodiscard]] bool is_pawn_start_square(Position from) const;
+    [[nodiscard]] bool is_pawn_start_square(BitBoard from) const;
     void remove_if_color(BitBoard& moves, PieceColor color) const;
     [[nodiscard]] BitBoard board_of_color(PieceColor color) const;
     [[nodiscard]] BitBoard& board_of_color(PieceColor color);
@@ -212,11 +207,11 @@ template <Direction D>
 }
 
 template <typename DirectionRange>
-[[nodiscard]] BitBoard Board::sliding_moves(DirectionRange&& directions, const Position from, size_t range) const
+[[nodiscard]] BitBoard Board::sliding_moves(DirectionRange&& directions, const BitBoard from, size_t range) const
 {
     BitBoard moves;
     for (const auto direction : std::forward<DirectionRange>(directions)) {
-        moves.set(sliding_moves(direction, BitBoard{from}, range));
+        moves.set(sliding_moves(direction, from, range));
     }
     return moves;
 }

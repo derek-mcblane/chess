@@ -289,7 +289,6 @@ class ChessApplication
         }
     }
 
-
     void handle_window_events(const SDL_WindowEvent& event)
     {
         switch (event.event) {
