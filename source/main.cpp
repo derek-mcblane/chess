@@ -142,8 +142,8 @@ class ChessApplication
         const auto coord = transform_grid_view_to_chess(point);
 
         const auto lock = std::lock_guard{pieces_mutex_};
-        if (selected_piece_coordinate_.has_value() && selected_piece_valid_moves_.has_value()) {
-            if (!selected_piece_valid_moves_->contains(coord)) {
+        if (selected_piece_coordinate_.has_value()) {
+            if (!selected_piece_valid_moves_.contains(coord)) {
                 spdlog::debug("invalid move");
             } else {
                 const auto move = Board::Move{*selected_piece_coordinate_, coord};
@@ -152,7 +152,7 @@ class ChessApplication
                 pieces_.make_move(move, promotion_piece);
             }
             selected_piece_coordinate_ = std::nullopt;
-            selected_piece_valid_moves_ = std::nullopt;
+            selected_piece_valid_moves_.clear();
         } else {
             if (pieces_.is_active_piece(coord)) {
                 selected_piece_coordinate_ = std::optional{coord};
@@ -246,11 +246,11 @@ class ChessApplication
 
         renderer_->set_draw_blend_mode(SDL_BLENDMODE_BLEND);
         const auto lock = std::lock_guard{pieces_mutex_};
-        if (selected_piece_coordinate_.has_value() && selected_piece_valid_moves_.has_value()) {
+        if (selected_piece_coordinate_.has_value()) {
             renderer_->set_draw_color(pallete::color_with_alpha(pallete::light_green, 0x7F));
             renderer_->fill_rectangle(board_display_.grid_cell(transform_chess_to_grid_view(*selected_piece_coordinate_)
             ));
-            for (const auto move : *selected_piece_valid_moves_) {
+            for (const auto move : selected_piece_valid_moves_) {
                 renderer_->fill_rectangle(board_display_.grid_cell(transform_chess_to_grid_view(move)));
             }
         }
@@ -376,7 +376,7 @@ class ChessApplication
     std::mutex pieces_mutex_;
     Board pieces_{Board::make_standard_setup_board()};
     std::optional<Position> selected_piece_coordinate_;
-    std::optional<std::set<Position>> selected_piece_valid_moves_;
+    std::set<Position> selected_piece_valid_moves_;
     std::atomic_bool highlight_attacked_{false};
 
     EventHandlers<SDL_QuitEvent> quit_event_handlers_;
