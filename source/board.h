@@ -32,10 +32,12 @@ class Board
     [[nodiscard]] std::vector<Board::Position> valid_moves_vector(Position from);
     [[nodiscard]] std::set<Board::Position> valid_moves_set(Position from);
     [[nodiscard]] PieceColor active_color() const;
+    [[nodiscard]] PieceColor inactive_color() const;
     [[nodiscard]] bool is_active_piece(const Position& position) const;
     [[nodiscard]] std::vector<Board::Position> attacked_by_white() const;
     [[nodiscard]] std::vector<Board::Position> attacked_by_black() const;
-    [[nodiscard]] bool is_in_check() const;
+    [[nodiscard]] bool is_in_check(PieceColor color) const;
+    [[nodiscard]] bool is_active_in_check() const;
     [[nodiscard]] bool is_in_checkmate() const;
     [[nodiscard]] bool is_in_stalemate() const;
     [[nodiscard]] Board::Position active_king_position() const;
@@ -136,10 +138,11 @@ class Board
     [[nodiscard]] Piece piece_at_checked(const Position& position) const;
     [[nodiscard]] Piece piece_at_checked(BitBoard position) const;
     [[nodiscard]] BitBoard occupied_board() const;
-    [[nodiscard]] BitBoard attacked_by_white_board() const;
-    [[nodiscard]] BitBoard attacked_by_black_board() const;
+    [[nodiscard]] BitBoard attacked_by_color(PieceColor color) const;
     [[nodiscard]] BitBoard attacked_by_active() const;
     [[nodiscard]] BitBoard attacked_by_opponent() const;
+    [[nodiscard]] BitBoard attacked_by_white_board() const;
+    [[nodiscard]] BitBoard attacked_by_black_board() const;
     void clear_pieces(BitBoard board);
     void set_pieces(Piece piece, BitBoard positions);
     void move_piece(BitBoardPieceMove move);
@@ -155,17 +158,17 @@ class Board
     [[nodiscard]] BitBoard valid_moves_bitboard(BitBoard from) const;
     [[nodiscard]] bool is_valid_move(BitBoardMove move) const;
     [[nodiscard]] bool has_valid_move() const;
-    [[nodiscard]] bool test_move_for_check(const BitBoardMove& move) const;
+    [[nodiscard]] bool test_move_for_self_check(const BitBoardMove& move) const;
     [[nodiscard]] BitBoard attacking_bitboard(BitBoard from) const;
     [[nodiscard]] BitBoard pawn_moves(BitBoard from, PieceColor color) const;
     [[nodiscard]] BitBoard pawn_attacking_squares(BitBoard from, PieceColor color) const;
     [[nodiscard]] BitBoard pawn_attacking_moves(BitBoard from, PieceColor color) const;
-    [[nodiscard]] BitBoard knight_moves(BitBoard from, PieceColor color) const;
-    [[nodiscard]] BitBoard bishop_moves(BitBoard from, PieceColor color) const;
-    [[nodiscard]] BitBoard rook_moves(BitBoard from, PieceColor color) const;
-    [[nodiscard]] BitBoard queen_moves(BitBoard from, PieceColor color) const;
+    [[nodiscard]] BitBoard knight_moves(BitBoard from) const;
+    [[nodiscard]] BitBoard bishop_moves(BitBoard from) const;
+    [[nodiscard]] BitBoard rook_moves(BitBoard from) const;
+    [[nodiscard]] BitBoard queen_moves(BitBoard from) const;
     [[nodiscard]] BitBoard king_castling_moves(PieceColor color) const;
-    [[nodiscard]] BitBoard king_standard_moves(BitBoard from, PieceColor color) const;
+    [[nodiscard]] BitBoard king_standard_moves(BitBoard from) const;
     [[nodiscard]] BitBoard king_moves(BitBoard from, PieceColor color) const;
     [[nodiscard]] bool white_can_castle_kingside() const;
     [[nodiscard]] bool white_can_castle_queenside() const;
@@ -185,6 +188,7 @@ class Board
 
     [[nodiscard]] bool is_pawn_start_square(BitBoard from) const;
     void remove_if_color(BitBoard& moves, PieceColor color) const;
+
     [[nodiscard]] BitBoard board_of_color(PieceColor color) const;
     [[nodiscard]] BitBoard& board_of_color(PieceColor color);
     [[nodiscard]] BitBoard active_color_board() const;
