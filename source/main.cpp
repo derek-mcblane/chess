@@ -1,5 +1,5 @@
-#include "board.h"
 #include "event_handlers.h"
+#include "game.h"
 #include "grid_view.h"
 #include "pieces.h"
 #include "sprite_map_grid.h"
@@ -146,7 +146,7 @@ class ChessApplication
             if (!selected_piece_valid_moves_.contains(coord)) {
                 spdlog::debug("invalid move");
             } else {
-                const auto move = Board::Move{*selected_piece_coordinate_, coord};
+                const auto move = GameBoard::Move{*selected_piece_coordinate_, coord};
                 const auto promotion_piece =
                     (pieces_.is_promotion_move(move)) ? std::optional<PieceType>{PieceType::queen} : std::nullopt;
                 pieces_.make_move(move, promotion_piece);
@@ -165,7 +165,7 @@ class ChessApplication
     {
         quit_event_handlers_.add_handler([this](const SDL_QuitEvent& event) { handle_quit_event(event); });
         window_resize_handlers_.add_handler([this](const SDL_WindowEvent& event) {
-            update_board_size({event.data1, event.data2});
+            update_board_display_size({event.data1, event.data2});
         });
 
         mouse_button_down_event_handlers_.add_handler([this](const SDL_MouseButtonEvent& event) {
@@ -182,15 +182,15 @@ class ChessApplication
         });
     }
 
-    void update_board_size(std::tuple<int, int> window_size)
+    void update_board_display_size(std::tuple<int, int> window_size)
     {
         using namespace sdl;
         const auto window_size_point = ::Point{std::get<0>(window_size), std::get<1>(window_size)};
         const auto min_dimension_size = std::min(window_size_point.x, window_size_point.y);
 
         const auto board_origin = (window_size_point - board_display_.size()) / 2;
-        const auto board_size = ::Point{min_dimension_size, min_dimension_size};
-        board_display_.region() = {board_origin.x, board_origin.y, board_size.x, board_size.y};
+        const auto board_display_size = ::Point{min_dimension_size, min_dimension_size};
+        board_display_.region() = {board_origin.x, board_origin.y, board_display_size.x, board_display_size.y};
 
         auto pieces_image =
             sdl::image::load_sized_svg(sprite_map_filename, board_display_.region().w, board_display_.region().w / 3);
@@ -336,6 +336,9 @@ class ChessApplication
     void process_events()
     {
         while (const auto event = sdl::poll_event()) {
+            if (!event.has_value()) {
+                throw std::runtime_error("empty optional event"); // to get clangd to be quiet
+            }
             ImGui_ImplSDL2_ProcessEvent(&*event);
             switch (event->type) {
             case SDL_QUIT:
@@ -370,7 +373,7 @@ class ChessApplication
         }
     }
 
-    void handle_quit_event(const SDL_QuitEvent& event)
+    void handle_quit_event([[maybe_unused]] const SDL_QuitEvent& event)
     {
         running_ = false;
     }
@@ -394,7 +397,7 @@ class ChessApplication
     SpriteGrid<Piece> pieces_sprite_map_;
 
     std::mutex pieces_mutex_;
-    Board pieces_{Board::make_standard_setup_board()};
+    GameBoard pieces_;
     std::optional<Position> selected_piece_coordinate_;
     std::set<Position> selected_piece_valid_moves_;
     std::atomic_bool highlight_attacked_{false};
@@ -407,7 +410,7 @@ class ChessApplication
     EventHandlers<SDL_KeyboardEvent> key_up_event_handlers_;
 };
 
-int main(int argc, char* argv[])
+int main([[maybe_unused]] int argc, [[maybe_unused]] char* argv[])
 {
     spdlog::cfg::load_env_levels();
 
@@ -445,6 +448,7 @@ int main(int argc, char* argv[])
     ImGui_ImplSDLRenderer2_Init(renderer->get_pointer());
     auto imgui_sdl2_renderer_shutdown = gsl::finally([] { ImGui_ImplSDLRenderer2_Shutdown(); });
 
+    spdlog::info("starting chess application");
     ChessApplication{std::move(window), std::move(renderer)}.run();
-    return 0;
+    return EXIT_SUCCESS;
 }

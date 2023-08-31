@@ -3,7 +3,7 @@ find_package(spdlog REQUIRED)
 find_package(Microsoft.GSL CONFIG REQUIRED)
 
 # Chess
-add_library(Chess pieces.cpp board.cpp)
+add_library(Chess pieces.cpp board.cpp game.cpp)
 target_compile_features(Chess PUBLIC cxx_std_20)
 target_compile_options(Chess PUBLIC ${CHESS_WARNING_OPTIONS})
 target_include_directories(Chess PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
