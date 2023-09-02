@@ -105,6 +105,7 @@ class ChessApplication
     ChessApplication(std::unique_ptr<sdl::Window> window, std::unique_ptr<sdl::Renderer> renderer)
         : window_{std::move(window)},
           renderer_{std::move(renderer)},
+          game_view_{renderer_->make_texture(SDL_PIXELFORMAT_RGBA32, SDL_TEXTUREACCESS_TARGET, 1000, 1000)},
           board_display_{{board_size, board_size}, {0, 0, window_->width(), window_->height()}},
           pieces_sprite_map_{
               Point{6, 2},
@@ -224,14 +225,47 @@ class ChessApplication
 
     void render_frame()
     {
-        render_board();
-        render_pieces();
-
+        ImGui::DockSpaceOverViewport(ImGui::GetMainViewport(), ImGuiDockNodeFlags_PassthruCentralNode);
         ImGui::ShowDemoWindow(&show_demo_window_);
+        show_menu();
+        show_game();
         ImGui::Render();
         ImGui_ImplSDLRenderer2_RenderDrawData(ImGui::GetDrawData());
 
         renderer_->present();
+    }
+
+    void show_menu()
+    {
+        if (ImGui::BeginMainMenuBar()) {
+            if (ImGui::BeginMenu("Menu")) {
+                if (ImGui::MenuItem("New Game")) {
+                    pieces_ = GameBoard{};
+                }
+                ImGui::EndMenu();
+            }
+            if (ImGui::BeginMenu("Developer")) {
+                if (ImGui::MenuItem("Show Demo Window")) {
+                    show_demo_window_ = !show_demo_window_;
+                }
+                ImGui::EndMenu();
+            }
+            ImGui::EndMainMenuBar();
+        }
+    }
+
+    void show_game()
+    {
+        if (ImGui::Begin("Game Window")) {
+            renderer_->set_render_target(game_view_.get_pointer());
+            render_board();
+            render_pieces();
+            renderer_->set_render_target(nullptr);
+            const auto size = game_view_.size();
+            const auto image_size = ImVec2{static_cast<float>(size.x), static_cast<float>(size.y)};
+            ImGui::Image(game_view_.get_pointer(), image_size);
+            ImGui::End();
+        }
     }
 
     void render_board()
@@ -387,6 +421,7 @@ class ChessApplication
 
     std::unique_ptr<sdl::Window> window_;
     std::unique_ptr<sdl::Renderer> renderer_;
+    sdl::Texture game_view_;
 
     static constexpr auto board_size = 8;
     ClickableGrid board_display_;
@@ -448,7 +483,6 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char* argv[])
     ImGui_ImplSDLRenderer2_Init(renderer->get_pointer());
     auto imgui_sdl2_renderer_shutdown = gsl::finally([] { ImGui_ImplSDLRenderer2_Shutdown(); });
 
-    spdlog::info("starting chess application");
     ChessApplication{std::move(window), std::move(renderer)}.run();
     return EXIT_SUCCESS;
 }

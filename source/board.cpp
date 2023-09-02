@@ -68,7 +68,7 @@ Piece BoardPieces::at_checked(const Position& position) const
 
 std::optional<PieceColor> BoardPieces::color_at(const BitBoard position) const noexcept
 {
-    assert(position.count() == 1U);
+    assert(position.has_single_position());
     return (black_.test_all(position))   ? std::optional<PieceColor>{PieceColor::black}
            : (white_.test_all(position)) ? std::optional<PieceColor>{PieceColor::white}
                                          : std::nullopt;
@@ -81,7 +81,7 @@ std::optional<PieceColor> BoardPieces::color_at(const Position& position) const
 
 std::optional<PieceType> BoardPieces::type_at(const BitBoard position) const noexcept
 {
-    assert(position.count() == 1U);
+    assert(position.has_single_position());
     return (pawns_.test_all(position))     ? std::optional<PieceType>{PieceType::pawn}
            : (knights_.test_all(position)) ? std::optional<PieceType>{PieceType::knight}
            : (bishops_.test_all(position)) ? std::optional<PieceType>{PieceType::bishop}
