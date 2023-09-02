@@ -38,5 +38,4 @@ class ClickableGrid : public Widget
     Region& region_impl() override;
     [[nodiscard]] const Region& region_impl() const override;
     void draw_impl(sdl::Renderer& renderer) const override;
-
 };

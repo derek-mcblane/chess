@@ -32,6 +32,18 @@ class Widget
         draw_impl(renderer);
     }
 
+    void set_origin(Point origin)
+    {
+        region().x = origin.x;
+        region().y = origin.y;
+    }
+
+    void set_size(Point size)
+    {
+        region().w = size.x;
+        region().h = size.y;
+    }
+
     [[nodiscard]] constexpr Point origin() const
     {
         return sdl::Point<int>{region().x, region().y};

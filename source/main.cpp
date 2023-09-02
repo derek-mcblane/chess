@@ -40,7 +40,8 @@ struct fmt::formatter<SDL_MouseButtonEvent> : fmt::formatter<std::string>
         return fmt::format_to(
             ctx.out(),
             "[SDL_MouseButtonEvent"
-            "type={}, timestamp={}, windowID={}, which={}, button={}, state={}, clicks={}, padding1={}, x={}, y={}]",
+            "type={}, timestamp={}, windowID={}, which={}, button={}, "
+            "state={}, clicks={}, padding1={}, x={}, y={}]",
             event.type,
             event.timestamp,
             event.windowID,
@@ -63,6 +64,26 @@ struct fmt::formatter<Point> : fmt::formatter<std::string>
         return fmt::format_to(ctx.out(), "[Point x={}, y={}]", point.x, point.y);
     }
 };
+
+inline ImVec2 make_im_vec2(int x, int y)
+{
+    return ImVec2{gsl::narrow_cast<float>(x), gsl::narrow_cast<float>(y)};
+}
+
+inline ImVec2 make_im_vec2(sdl::Point<int> point)
+{
+    return make_im_vec2(point.x, point.y);
+}
+
+inline sdl::Point<int> make_point(float x, float y)
+{
+    return sdl::Point<int>{gsl::narrow_cast<int>(std::ceil(x)), gsl::narrow_cast<int>(std::ceil(y))};
+}
+
+inline sdl::Point<int> make_point(ImVec2 im_vec2)
+{
+    return make_point(im_vec2.x, im_vec2.y);
+}
 
 Point transform_chess_to_grid_view(Position coordinate)
 {
@@ -105,8 +126,8 @@ class ChessApplication
     ChessApplication(std::unique_ptr<sdl::Window> window, std::unique_ptr<sdl::Renderer> renderer)
         : window_{std::move(window)},
           renderer_{std::move(renderer)},
-          game_view_{renderer_->make_texture(SDL_PIXELFORMAT_RGBA32, SDL_TEXTUREACCESS_TARGET, 1000, 1000)},
-          board_display_{{board_size, board_size}, {0, 0, window_->width(), window_->height()}},
+          game_view_{renderer_->make_texture(game_view_properties_)},
+          board_display_{{board_size, board_size}, {0, 0, game_view_.width(), game_view_.height()}},
           pieces_sprite_map_{
               Point{6, 2},
               sdl::Texture{renderer_->make_texture_from_surface(
@@ -165,10 +186,6 @@ class ChessApplication
     void initialize_event_handlers()
     {
         quit_event_handlers_.add_handler([this](const SDL_QuitEvent& event) { handle_quit_event(event); });
-        window_resize_handlers_.add_handler([this](const SDL_WindowEvent& event) {
-            update_board_display_size({event.data1, event.data2});
-        });
-
         mouse_button_down_event_handlers_.add_handler([this](const SDL_MouseButtonEvent& event) {
             board_display_.on_button_down(event);
         });
@@ -181,22 +198,6 @@ class ChessApplication
                 highlight_attacked_ = !highlight_attacked_;
             }
         });
-    }
-
-    void update_board_display_size(std::tuple<int, int> window_size)
-    {
-        using namespace sdl;
-        const auto window_size_point = ::Point{std::get<0>(window_size), std::get<1>(window_size)};
-        const auto min_dimension_size = std::min(window_size_point.x, window_size_point.y);
-
-        const auto board_origin = (window_size_point - board_display_.size()) / 2;
-        const auto board_display_size = ::Point{min_dimension_size, min_dimension_size};
-        board_display_.region() = {board_origin.x, board_origin.y, board_display_size.x, board_display_size.y};
-
-        auto pieces_image =
-            sdl::image::load_sized_svg(sprite_map_filename, board_display_.region().w, board_display_.region().w / 3);
-        auto pieces_texture = renderer_->make_texture_from_surface(pieces_image.get());
-        pieces_sprite_map_.texture() = sdl::Texture{std::move(pieces_texture)};
     }
 
     void run()
@@ -227,8 +228,16 @@ class ChessApplication
     {
         ImGui::DockSpaceOverViewport(ImGui::GetMainViewport(), ImGuiDockNodeFlags_PassthruCentralNode);
         ImGui::ShowDemoWindow(&show_demo_window_);
+
         show_menu();
-        show_game();
+
+        ImGui::Begin("Game Window");
+        update_board_display_size(make_point(ImGui::GetContentRegionAvail()));
+        ImGui::Image(game_view_.get_pointer(), make_im_vec2(game_view_.size()));
+        ImGui::End();
+
+        render_game();
+
         ImGui::Render();
         ImGui_ImplSDLRenderer2_RenderDrawData(ImGui::GetDrawData());
 
@@ -244,28 +253,33 @@ class ChessApplication
                 }
                 ImGui::EndMenu();
             }
-            if (ImGui::BeginMenu("Developer")) {
-                if (ImGui::MenuItem("Show Demo Window")) {
-                    show_demo_window_ = !show_demo_window_;
-                }
-                ImGui::EndMenu();
-            }
             ImGui::EndMainMenuBar();
         }
     }
 
-    void show_game()
+    void render_game()
     {
-        if (ImGui::Begin("Game Window")) {
-            renderer_->set_render_target(game_view_.get_pointer());
-            render_board();
-            render_pieces();
-            renderer_->set_render_target(nullptr);
-            const auto size = game_view_.size();
-            const auto image_size = ImVec2{static_cast<float>(size.x), static_cast<float>(size.y)};
-            ImGui::Image(game_view_.get_pointer(), image_size);
-            ImGui::End();
+        SDL_Texture* original_target = renderer_->get_render_target();
+        auto restore_target = gsl::finally([this, original_target] { renderer_->set_render_target(original_target); });
+        renderer_->set_render_target(game_view_.get_pointer());
+
+        render_board();
+        render_pieces();
+    }
+
+    void update_board_display_size(const Point new_size)
+    {
+        using namespace sdl;
+        if (board_display_.size() == new_size) {
+            return;
         }
+        board_display_.set_size(new_size);
+        auto pieces_image =
+            sdl::image::load_sized_svg(sprite_map_filename, board_display_.region().w, board_display_.region().w / 3);
+        pieces_sprite_map_.texture() = sdl::Texture{renderer_->make_texture_from_surface(pieces_image.get())};
+        game_view_properties_.width = board_display_.size().x;
+        game_view_properties_.height = board_display_.size().y;
+        game_view_ = sdl::Texture{renderer_->make_texture(game_view_properties_)};
     }
 
     void render_board()
@@ -341,20 +355,6 @@ class ChessApplication
         }
     }
 
-    void handle_window_events(const SDL_WindowEvent& event)
-    {
-        switch (event.event) {
-        case SDL_WINDOWEVENT_RESIZED:
-            spdlog::debug("SDL_WINDOWEVENT_RESIZED");
-            window_resize_handlers_.call_all(event);
-            break;
-        case SDL_WINDOWEVENT_SIZE_CHANGED:
-            spdlog::debug("SDL_WINDOWEVENT_SIZE_CHANGED");
-            window_resize_handlers_.call_all(event);
-            break;
-        }
-    }
-
     void handle_keyboard_events(const SDL_KeyboardEvent& event)
     {
         switch (event.type) {
@@ -377,9 +377,6 @@ class ChessApplication
             switch (event->type) {
             case SDL_QUIT:
                 quit_event_handlers_.call_all(event->quit);
-                break;
-            case SDL_WINDOWEVENT:
-                handle_window_events(event->window);
                 break;
             case SDL_MOUSEBUTTONDOWN:
                 spdlog::debug(
@@ -421,9 +418,9 @@ class ChessApplication
 
     std::unique_ptr<sdl::Window> window_;
     std::unique_ptr<sdl::Renderer> renderer_;
-    sdl::Texture game_view_;
-
     static constexpr auto board_size = 8;
+    sdl::Texture::Properties game_view_properties_ = {SDL_PIXELFORMAT_RGBA32, SDL_TEXTUREACCESS_TARGET, 1000, 1000};
+    sdl::Texture game_view_;
     ClickableGrid board_display_;
 
     bool show_demo_window_ = true;
