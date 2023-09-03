@@ -96,9 +96,27 @@ Position transform_grid_view_to_chess(Point coordinate)
 }
 
 template <typename Rectangle>
-sdl::Point<sdl::rectangle_dimension_type<Rectangle>> rectangle_center(Rectangle rectangle)
+sdl::Point<sdl::rectangle_dimension_type<Rectangle>> rectangle_center(const Rectangle rectangle)
 {
     return {rectangle.x + rectangle.w / 2, rectangle.y + rectangle.h / 2};
+}
+
+template <typename Rectangle>
+sdl::Point<sdl::rectangle_dimension_type<Rectangle>> rectangle_origin(const Rectangle rectangle)
+{
+    return {rectangle.x, rectangle.y};
+}
+
+template <typename Rectangle>
+sdl::rectangle_dimension_type<Rectangle> rectangle_area(const Rectangle rectangle)
+{
+    return rectangle.w * rectangle.h;
+}
+
+template <typename Point>
+sdl::point_dimension_type<Point> size_area(Point size)
+{
+    return size.x * size.y;
 }
 
 namespace pallete {
@@ -126,16 +144,11 @@ class ChessApplication
     ChessApplication(std::unique_ptr<sdl::Window> window, std::unique_ptr<sdl::Renderer> renderer)
         : window_{std::move(window)},
           renderer_{std::move(renderer)},
-          game_view_{renderer_->make_texture(game_view_properties_)},
-          board_display_{{board_size, board_size}, {0, 0, game_view_.width(), game_view_.height()}},
+          board_display_{
+              {board_size, board_size},
+              {0, 0, board_display_texture_properties_.width, board_display_texture_properties_.height}},
           pieces_sprite_map_{
               Point{6, 2},
-              sdl::Texture{renderer_->make_texture_from_surface(
-                  sdl::image::load_sized_svg(
-                      sprite_map_filename, board_display_.region().w, board_display_.region().w / 3
-                  )
-                      .get()
-              )},
               {
                   {{PieceColor::white, PieceType::king}, {0, 0}},
                   {{PieceColor::white, PieceType::queen}, {1, 0}},
@@ -155,6 +168,7 @@ class ChessApplication
         assert(renderer_ != nullptr);
         IMGUI_CHECKVERSION();
         initialize_event_handlers();
+
         board_display_.set_on_cell_clicked_callback([this](const Point& point) { on_grid_cell_clicked(point); });
     }
 
@@ -226,14 +240,22 @@ class ChessApplication
 
     void render_frame()
     {
+        using namespace sdl::point_operators;
+
         ImGui::DockSpaceOverViewport(ImGui::GetMainViewport(), ImGuiDockNodeFlags_PassthruCentralNode);
         ImGui::ShowDemoWindow(&show_demo_window_);
 
         show_menu();
 
         ImGui::Begin("Game Window");
-        update_board_display_size(make_point(ImGui::GetContentRegionAvail()));
-        ImGui::Image(game_view_.get_pointer(), make_im_vec2(game_view_.size()));
+
+        const auto game_window_origin = make_point(ImGui::GetWindowPos());
+        const auto board_display_offset = make_point(ImGui::GetWindowContentRegionMin());
+        const auto board_display_origin = game_window_origin + board_display_offset;
+        const auto board_display_size = make_point(ImGui::GetContentRegionAvail());
+        update_board_display_region(sdl::make_rectangle(board_display_origin, board_display_size));
+
+        ImGui::Image(board_display_.texture().get_pointer(), make_im_vec2(board_display_.texture().size()));
         ImGui::End();
 
         render_game();
@@ -261,25 +283,34 @@ class ChessApplication
     {
         SDL_Texture* original_target = renderer_->get_render_target();
         auto restore_target = gsl::finally([this, original_target] { renderer_->set_render_target(original_target); });
-        renderer_->set_render_target(game_view_.get_pointer());
+        renderer_->set_render_target(board_display_.texture().get_pointer());
 
         render_board();
         render_pieces();
     }
 
-    void update_board_display_size(const Point new_size)
+    void update_board_display_region(const sdl::Rectangle<int> region)
     {
-        using namespace sdl;
+        using namespace sdl::point_operators;
+
+        if (rectangle_area(region) <= 0) {
+            return;
+        }
+
+        board_display_.set_origin(rectangle_origin(region));
+
+        const auto min_length = std::min(region.w, region.h);
+        const auto new_size = ::Point{min_length, min_length};
         if (board_display_.size() == new_size) {
             return;
         }
+
         board_display_.set_size(new_size);
+        board_display_texture_properties_.set_size(new_size);
+        board_display_.texture() = sdl::Texture{renderer_->make_texture(board_display_texture_properties_)};
         auto pieces_image =
             sdl::image::load_sized_svg(sprite_map_filename, board_display_.region().w, board_display_.region().w / 3);
         pieces_sprite_map_.texture() = sdl::Texture{renderer_->make_texture_from_surface(pieces_image.get())};
-        game_view_properties_.width = board_display_.size().x;
-        game_view_properties_.height = board_display_.size().y;
-        game_view_ = sdl::Texture{renderer_->make_texture(game_view_properties_)};
     }
 
     void render_board()
@@ -289,7 +320,7 @@ class ChessApplication
         for (int col = 0; col < board_display_.grid_size.x; ++col) {
             for (int row = 0; row < board_display_.grid_size.y; ++row) {
                 renderer_->set_draw_color(((row + col) % 2 == 0) ? pallete::white : pallete::jasons_dumbass_blue);
-                renderer_->fill_rectangle(board_display_.grid_cell({row, col}));
+                renderer_->fill_rectangle(board_display_.grid_cell_local({row, col}));
             }
         }
 
@@ -297,39 +328,42 @@ class ChessApplication
         const auto lock = std::lock_guard{pieces_mutex_};
         if (selected_piece_coordinate_.has_value()) {
             renderer_->set_draw_color(pallete::color_with_alpha(pallete::light_green, 0x7F));
-            renderer_->fill_rectangle(board_display_.grid_cell(transform_chess_to_grid_view(*selected_piece_coordinate_)
-            ));
+            renderer_->fill_rectangle(
+                board_display_.grid_cell_local(transform_chess_to_grid_view(*selected_piece_coordinate_))
+            );
             for (const auto move : selected_piece_valid_moves_) {
-                renderer_->fill_rectangle(board_display_.grid_cell(transform_chess_to_grid_view(move)));
+                renderer_->fill_rectangle(board_display_.grid_cell_local(transform_chess_to_grid_view(move)));
             }
         }
 
         if (pieces_.is_in_checkmate()) {
             renderer_->set_draw_color(pallete::color_with_alpha(pallete::black, 0x7F));
             renderer_->fill_rectangle(
-                board_display_.grid_cell(transform_chess_to_grid_view(pieces_.active_king_position()))
+                board_display_.grid_cell_local(transform_chess_to_grid_view(pieces_.active_king_position()))
             );
         } else if (pieces_.is_active_in_check()) {
             renderer_->set_draw_color(pallete::color_with_alpha(pallete::light_red, 0x7F));
             renderer_->fill_rectangle(
-                board_display_.grid_cell(transform_chess_to_grid_view(pieces_.active_king_position()))
+                board_display_.grid_cell_local(transform_chess_to_grid_view(pieces_.active_king_position()))
             );
         } else if (pieces_.is_in_stalemate()) {
             renderer_->set_draw_color(pallete::color_with_alpha(pallete::light_purple, 0x7F));
             renderer_->fill_rectangle(
-                board_display_.grid_cell(transform_chess_to_grid_view(pieces_.active_king_position()))
+                board_display_.grid_cell_local(transform_chess_to_grid_view(pieces_.active_king_position()))
             );
         }
 
         if (highlight_attacked_) {
             for (const auto attacked_position : pieces_.attacked_by_vector<PieceColor::black>()) {
                 renderer_->set_draw_color(pallete::color_with_alpha(pallete::light_purple, 0x7F));
-                renderer_->fill_rectangle(board_display_.grid_cell(transform_chess_to_grid_view(attacked_position)));
+                renderer_->fill_rectangle(board_display_.grid_cell_local(transform_chess_to_grid_view(attacked_position)
+                ));
             }
 
             for (const auto attacked_position : pieces_.attacked_by_vector<PieceColor::white>()) {
                 renderer_->set_draw_color(pallete::color_with_alpha(pallete::light_red, 0x7F));
-                renderer_->fill_rectangle(board_display_.grid_cell(transform_chess_to_grid_view(attacked_position)));
+                renderer_->fill_rectangle(board_display_.grid_cell_local(transform_chess_to_grid_view(attacked_position)
+                ));
             }
         }
     }
@@ -345,12 +379,12 @@ class ChessApplication
                 if (!piece.has_value()) {
                     continue;
                 }
-                const auto piece_rect = pieces_sprite_map_.get_region(*piece);
-                const auto piece_position = board_display_.grid_cell_position(transform_chess_to_grid_view(coord));
+                const auto piece_position =
+                    board_display_.grid_cell_position_local(transform_chess_to_grid_view(coord));
                 const auto piece_size = board_display_.cell_size();
                 const auto screen_rect =
                     sdl::Rectangle<int>{piece_position.x, piece_position.y, piece_size.x, piece_size.y};
-                renderer_->copy<int>(pieces_sprite_map_.texture(), piece_rect, screen_rect);
+                renderer_->copy<int>(pieces_sprite_map_.texture(), pieces_sprite_map_.get_region(*piece), screen_rect);
             }
         }
     }
@@ -411,6 +445,8 @@ class ChessApplication
 
     std::atomic_bool running_{true};
 
+    bool show_demo_window_ = true;
+
     using fp_milliseconds = chrono::duration<float, chrono::milliseconds::period>;
     static constexpr int max_frames_per_second = 60;
     static constexpr auto period_duration = fp_milliseconds{1000.0F / max_frames_per_second};
@@ -418,12 +454,12 @@ class ChessApplication
 
     std::unique_ptr<sdl::Window> window_;
     std::unique_ptr<sdl::Renderer> renderer_;
-    static constexpr auto board_size = 8;
-    sdl::Texture::Properties game_view_properties_ = {SDL_PIXELFORMAT_RGBA32, SDL_TEXTUREACCESS_TARGET, 1000, 1000};
-    sdl::Texture game_view_;
-    ClickableGrid board_display_;
 
-    bool show_demo_window_ = true;
+    static constexpr auto board_size = 8;
+
+    sdl::Texture::Properties board_display_texture_properties_ = {
+        SDL_PIXELFORMAT_RGBA32, SDL_TEXTUREACCESS_TARGET, 1000, 1000};
+    ClickableGrid board_display_;
 
     static constexpr const char* sprite_map_filename = "resources/pieces_sprite_map.svg";
     SpriteGrid<Piece> pieces_sprite_map_;

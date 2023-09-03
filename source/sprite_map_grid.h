@@ -11,17 +11,17 @@ class SpriteGrid
 
     SpriteGrid() = default;
 
-    SpriteGrid(Point grid_size, sdl::Texture&& texture, CoordinateMap&& sprite_coordinates)
-        : texture_{std::move(texture)},
-          coordinates_{std::move(sprite_coordinates)},
-          grid_size_{grid_size}
+    SpriteGrid(Point grid_size, CoordinateMap&& sprite_coordinates)
+        : coordinates_{std::move(sprite_coordinates)}, grid_size_{grid_size}
     {}
 
-    [[nodiscard]] const sdl::Texture& texture() const {
+    [[nodiscard]] const sdl::Texture& texture() const
+    {
         return texture_;
     }
 
-    [[nodiscard]] sdl::Texture& texture() {
+    [[nodiscard]] sdl::Texture& texture()
+    {
         return texture_;
     }
 
