@@ -1,13 +1,11 @@
 #include "board.h"
 
 #include "vec2.h"
-#include "vec2_formatter.h"
-
-#include <spdlog/fmt/fmt.h>
 
 #include <cassert>
 
 #include <algorithm>
+#include <format>
 #include <map>
 #include <optional>
 #include <set>
@@ -56,7 +54,7 @@ Piece BoardPieces::at_checked(const BitBoard position) const
 {
     const auto piece = at(position);
     if (!piece.has_value()) {
-        throw std::runtime_error(fmt::format("no piece at position {}", position.to_position()));
+        throw std::runtime_error(std::format("no piece at position {}", position.to_position()));
     }
     return *piece;
 }

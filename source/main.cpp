@@ -171,31 +171,20 @@ class ChessApplication
         board_display_.set_on_cell_clicked_callback([this](const Point& point) { on_grid_cell_clicked(point); });
     }
 
-    void on_grid_cell_clicked(const Point& point)
+    void run()
     {
-        spdlog::debug("clicked cell {}", point);
-        const auto coord = transform_grid_view_to_chess(point);
-
-        const auto lock = std::lock_guard{pieces_mutex_};
-        if (selected_piece_coordinate_.has_value()) {
-            if (!selected_piece_valid_moves_.contains(coord)) {
-                spdlog::debug("invalid move");
-            } else {
-                const auto move = GameBoard::Move{*selected_piece_coordinate_, coord};
-                const auto promotion_piece =
-                    (pieces_.is_promotion_move(move)) ? std::optional<PieceType>{PieceType::queen} : std::nullopt;
-                pieces_.make_move(move, promotion_piece);
+        while (running_) {
+            process_events();
+            if (window_.shown()) {
+                new_frame();
+                render_frame();
             }
-            selected_piece_coordinate_ = std::nullopt;
-            selected_piece_valid_moves_.clear();
-        } else {
-            if (pieces_.is_active_piece(coord)) {
-                selected_piece_coordinate_ = std::optional{coord};
-                selected_piece_valid_moves_ = pieces_.valid_moves_set(coord);
-            }
+            spdlog::default_logger()->flush();
+            minimum_period_delay_.wait_until_done_and_restart();
         }
     }
 
+  private:
     void initialize_event_handlers()
     {
         quit_event_handlers_.add_handler([this](const SDL_QuitEvent& event) { handle_quit_event(event); });
@@ -213,20 +202,6 @@ class ChessApplication
         });
     }
 
-    void run()
-    {
-        while (running_) {
-            process_events();
-            if (window_.shown()) {
-                new_frame();
-                render_frame();
-            }
-            spdlog::default_logger()->flush();
-            minimum_period_delay_.wait_until_done_and_restart();
-        }
-    }
-
-  private:
     void new_frame()
     {
         ImGui_ImplSDLRenderer2_NewFrame();
@@ -388,6 +363,30 @@ class ChessApplication
         }
     }
 
+    void on_grid_cell_clicked(const Point& point)
+    {
+        const auto coord = transform_grid_view_to_chess(point);
+
+        const auto lock = std::lock_guard{pieces_mutex_};
+        if (selected_piece_coordinate_.has_value()) {
+            if (!selected_piece_valid_moves_.contains(coord)) {
+                spdlog::debug("invalid move");
+            } else {
+                const auto move = GameBoard::Move{*selected_piece_coordinate_, coord};
+                if (pieces_.is_promotion_move(move)) {
+                    selecting_promotion_ = true;
+                }
+            }
+            selected_piece_coordinate_ = std::nullopt;
+            selected_piece_valid_moves_.clear();
+        } else {
+            if (pieces_.is_active_piece(coord)) {
+                selected_piece_coordinate_ = std::optional{coord};
+                selected_piece_valid_moves_ = pieces_.valid_moves_set(coord);
+            }
+        }
+    }
+
     void handle_keyboard_events(const SDL_KeyboardEvent& event)
     {
         switch (event.type) {
@@ -467,6 +466,7 @@ class ChessApplication
     GameBoard pieces_;
     std::optional<Position> selected_piece_coordinate_;
     std::set<Position> selected_piece_valid_moves_;
+    std::atomic_bool selecting_promotion_{false};
     std::atomic_bool highlight_attacked_{false};
 
     EventHandlers<SDL_QuitEvent> quit_event_handlers_;

@@ -23,6 +23,11 @@ class ClickableGrid : public Widget
     [[nodiscard]] Point grid_cell_position(Point index) const;
     [[nodiscard]] Point cell_size() const;
 
+    std::optional<Point> clicked_index() const
+    {
+        return clicked_index_;
+    }
+
     void set_on_cell_clicked_callback(OnClickedCallback&& callback);
     void clear_on_cell_clicked_callback();
 
@@ -40,7 +45,7 @@ class ClickableGrid : public Widget
     Region region_;
     sdl::Texture texture_;
     std::atomic<Point> down_index_;
-    std::optional<std::atomic<Point>> selected_index_;
+    std::optional<std::atomic<Point>> clicked_index_;
     std::optional<OnClickedCallback> on_cell_clicked_;
 
     void on_button_down_impl(const SDL_MouseButtonEvent& event) override;

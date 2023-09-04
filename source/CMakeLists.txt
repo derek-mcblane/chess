@@ -8,7 +8,7 @@ target_compile_features(Chess PUBLIC cxx_std_20)
 target_compile_options(Chess PUBLIC ${CHESS_WARNING_OPTIONS})
 target_include_directories(Chess PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 target_link_libraries(Chess PUBLIC BitBoard)
-target_link_libraries(Chess PRIVATE spdlog::spdlog) 
+#target_link_libraries(Chess PRIVATE spdlog::spdlog) 
 
 # Chess GUI Application
 find_package(SDL2 REQUIRED CONFIG COMPONENTS SDL2main)

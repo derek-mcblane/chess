@@ -17,9 +17,11 @@ enum class PieceColor : int
     white,
 };
 extern const std::map<PieceColor, std::string> piece_color_names;
+extern const std::map<PieceColor, std::string> piece_color_short_names;
 
 template <PieceColor Color>
-struct OppositeColor {
+struct OppositeColor
+{
     static const PieceColor value;
 };
 
@@ -46,6 +48,7 @@ enum class PieceType : int
     king,
 };
 extern const std::map<PieceType, std::string> piece_type_names;
+extern const std::map<PieceType, std::string> piece_type_short_names;
 
 struct Piece
 {

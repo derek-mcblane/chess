@@ -1,4 +1,8 @@
 #include "game.h"
+#include "bit_board.h"
+#include "pieces.h"
+
+#include <optional>
 
 namespace chess {
 
@@ -99,29 +103,37 @@ void GameBoard::make_move(const Piece piece, const BitBoardMove move, std::optio
     if (move.from == move.to) {
         throw std::invalid_argument("move.from == move.to");
     }
-    if (promotion_selection.has_value() &&
-        (*promotion_selection == PieceType::pawn || *promotion_selection == PieceType::king)) {
-        throw std::invalid_argument("invalid promotion selection");
+    if (promotion_selection.has_value()) {
+        if (*promotion_selection == PieceType::pawn || *promotion_selection == PieceType::king) {
+            throw std::invalid_argument("invalid promotion selection");
+        }
+        history_.emplace_back(*this);
+
+        pieces_.clear(piece, move.from);
+        pieces_.set({piece.color, *promotion_selection}, move.to);
+
+        active_color_ = opposite_color(active_color_);
+    } else {
+        history_.emplace_back(*this);
+
+        // en passant capture
+        if (piece.type == PieceType::pawn && en_passant_square_.test_any(move.to)) {
+            pieces_.clear({move.from.to_position().x(), move.to.to_position().y()});
+        }
+
+        // castling move
+        if (piece.type == PieceType::king) {
+            castle(piece, move);
+        }
+
+        // normal move
+        pieces_.move(piece, move);
+
+        active_color_ = opposite_color(active_color_);
+
+        update_en_passant_state(piece, move);
+        update_castling_state(move);
     }
-
-    history_.emplace_back(*this);
-
-    // en passant capture
-    if (piece.type == PieceType::pawn && en_passant_square_.test_any(move.to)) {
-        pieces_.clear({move.from.to_position().x(), move.to.to_position().y()});
-    }
-
-    // castling move
-    if (piece.type == PieceType::king) {
-        castle(piece, move);
-    }
-
-    // normal move
-    pieces_.move(piece, move);
-    active_color_ = opposite_color(active_color_);
-
-    update_en_passant_state(piece, move);
-    update_castling_state(move);
 }
 
 void GameBoard::undo_previous_move()

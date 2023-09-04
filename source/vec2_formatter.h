@@ -2,7 +2,7 @@
 
 #include "vec2.h"
 
-#include <spdlog/spdlog.h>
+#include <spdlog/fmt/fmt.h>
 
 template <typename T>
 struct fmt::formatter<dm::Vec2<T>> : fmt::formatter<std::string>
@@ -12,4 +12,3 @@ struct fmt::formatter<dm::Vec2<T>> : fmt::formatter<std::string>
         return fmt::format_to(ctx.out(), "[Position x={}, y={}]", point.x(), point.y());
     }
 };
-

@@ -293,14 +293,14 @@ BitBoard GameBoard::valid_moves_bitboard(const BitBoard from) const
 template <PieceColor Color>
 [[nodiscard]] bool GameBoard::is_promotion_move(const BitBoardMove move) const
 {
+    assert(pieces_.at_checked(move.from).color == Color);
     if (!move.from.test_any(pawns())) {
         return false;
     }
-    assert(pieces_.at_checked(move.from).color == Color);
     return piece_row<opposite_color_v<Color>>().test_all(move.to);
 }
 
-// TODO: remove attacks that would self-check
+// TODO: remove attacks that would self-check or rename
 template <PieceColor Color>
 BitBoard GameBoard::attacking_bitboard(const BitBoard from) const
 {

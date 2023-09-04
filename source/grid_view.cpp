@@ -57,7 +57,7 @@ void ClickableGrid::clear_on_cell_clicked_callback()
 void ClickableGrid::on_button_down_impl(const SDL_MouseButtonEvent& event)
 {
     using namespace sdl::point_operators;
-    selected_index_.reset();
+    clicked_index_.reset();
     const auto click_position = ClickableGrid::Point{event.x, event.y};
     ClickableGrid::Point clicked_index{grid_index(click_position)};
     if (clicked_index.x < 0 || clicked_index.x >= grid_size.x) {
@@ -74,7 +74,7 @@ void ClickableGrid::on_button_up_impl(const SDL_MouseButtonEvent& event)
     using namespace sdl::point_operators;
     const ClickableGrid::Point up_index = grid_index({event.x, event.y});
     if (up_index == down_index_.load()) {
-        selected_index_ = up_index;
+        clicked_index_ = up_index;
         if (on_cell_clicked_) {
             (*on_cell_clicked_)(up_index);
         }
