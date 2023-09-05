@@ -5,7 +5,6 @@
 #include <cassert>
 
 #include <algorithm>
-#include <format>
 #include <map>
 #include <optional>
 #include <set>
@@ -54,7 +53,7 @@ Piece BoardPieces::at_checked(const BitBoard position) const
 {
     const auto piece = at(position);
     if (!piece.has_value()) {
-        throw std::runtime_error(std::format("no piece at position {}", position.to_position()));
+        throw std::runtime_error("no piece at position");
     }
     return *piece;
 }

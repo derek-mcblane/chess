@@ -54,6 +54,11 @@ struct Piece
 {
     PieceColor color;
     PieceType type;
+
+    [[nodiscard]] std::string to_string() const
+    {
+        return piece_color_names.at(color) + " " + piece_type_names.at(type);
+    }
 };
 
 namespace pieces {

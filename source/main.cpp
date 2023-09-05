@@ -124,12 +124,13 @@ sdl::point_dimension_type<Point> size_area(Point size)
 namespace pallete {
 
 [[maybe_unused]] static constexpr sdl::Color black{0x00, 0x00, 0x00, 0xFF};
+[[maybe_unused]] static constexpr sdl::Color gray{0x0F, 0x0F, 0x0F, 0xFF};
 [[maybe_unused]] static constexpr sdl::Color blue{0x00, 0x00, 0xFF, 0xFF};
 [[maybe_unused]] static constexpr sdl::Color jasons_dumbass_blue{129, 152, 201, 0xFF};
 [[maybe_unused]] static constexpr sdl::Color light_green{169, 216, 145, 0xFF};
 [[maybe_unused]] static constexpr sdl::Color light_red{214, 32, 35, 0xFF};
 [[maybe_unused]] static constexpr sdl::Color light_purple{175, 41, 198, 0xFF};
-[[maybe_unused]] static constexpr sdl::Color gray{0x0F, 0x0F, 0x0F, 0xFF};
+[[maybe_unused]] static constexpr sdl::Color light_gray{0xF8, 0xF8, 0xF8, 0xFF};
 [[maybe_unused]] static constexpr sdl::Color white{0xFF, 0xFF, 0xFF, 0xFF};
 
 [[nodiscard]] sdl::Color color_with_alpha(sdl::Color color, Uint8 alpha)
@@ -169,12 +170,42 @@ class ChessApplication
         IMGUI_CHECKVERSION();
         initialize_event_handlers();
         board_display_.set_on_cell_clicked_callback([this](const Point& point) { on_grid_cell_clicked(point); });
+
+        auto pieces_image = sdl::image::load_sized_svg(sprite_map_filename, {1000, 0});
+        pieces_sprite_map_.texture() = sdl::Texture{renderer_.make_texture_from_surface(pieces_image.get())};
+
+        for (const auto color : {PieceColor::black, PieceColor::white}) {
+            for (const auto type : {PieceType::knight, PieceType::bishop, PieceType::rook, PieceType::queen}) {
+                const auto piece = Piece{color, type};
+                piece_textures_.insert({piece, make_piece_texture(piece, {100, 100})});
+            }
+        }
+    }
+
+    sdl::Texture make_piece_texture(const Piece piece, const sdl::Point<int> size)
+    {
+        sdl::Texture::Properties texture_properties = {
+            SDL_PIXELFORMAT_RGBA32, SDL_TEXTUREACCESS_TARGET, size.x, size.y};
+        sdl::Texture texture = renderer_.make_texture(texture_properties);
+
+        SDL_Texture* original_target = renderer_.get_render_target();
+        auto restore_target = gsl::finally([this, original_target] { renderer_.set_render_target(original_target); });
+
+        renderer_.set_render_target(texture.get_pointer());
+        renderer_.set_draw_color(pallete::white);
+        renderer_.clear();
+        renderer_.copy(
+            pieces_sprite_map_.texture(), pieces_sprite_map_.get_region(piece), sdl::make_rectangle({0, 0}, size)
+        );
+
+        return texture;
     }
 
     void run()
     {
         while (running_) {
             process_events();
+            update_board();
             if (window_.shown()) {
                 new_frame();
                 render_frame();
@@ -185,6 +216,16 @@ class ChessApplication
     }
 
   private:
+    void update_board()
+    {
+        const auto move = move_selection_.load();
+        if (move.has_value() && !selecting_promotion_) {
+            pieces_.make_move(*move, promotion_selection_);
+            move_selection_ = std::nullopt;
+            promotion_selection_ = std::nullopt;
+        }
+    }
+
     void initialize_event_handlers()
     {
         quit_event_handlers_.add_handler([this](const SDL_QuitEvent& event) { handle_quit_event(event); });
@@ -228,6 +269,31 @@ class ChessApplication
             make_point(ImGui::GetWindowPos()) + make_point(ImGui::GetWindowContentRegionMin());
         const auto board_display_size = make_point(ImGui::GetContentRegionAvail());
         update_board_display_region(sdl::make_rectangle(board_display_origin, board_display_size));
+
+        if (selecting_promotion_) {
+            ImGui::OpenPopup("Promotion");
+        }
+        if (ImGui::BeginPopupModal("Promotion", nullptr)) {
+            for (const auto piece_type : promotion_piece_types_) {
+                const auto piece = Piece{pieces_.active_color(), piece_type};
+                const auto& texture = piece_textures_.at(piece);
+
+                auto button_size = ImVec2(50.0F, 50.0F);
+                auto uv0 = ImVec2(0.0F, 0.0F);
+                auto uv1 = ImVec2(1.0F, 1.0F);
+                auto bg_col = ImVec4(0.0F, 0.0F, 0.0F, 1.0F);
+                auto tint_col = ImVec4(1.0F, 1.0F, 1.0F, 1.0F);
+                if (ImGui::ImageButton(
+                        piece.to_string().c_str(), texture.get_pointer(), button_size, uv0, uv1, bg_col, tint_col
+                    )) {
+                    promotion_selection_ = piece_type;
+                    selecting_promotion_ = false;
+                    ImGui::CloseCurrentPopup();
+                }
+                ImGui::SameLine();
+            }
+            ImGui::EndPopup();
+        }
 
         ImGui::Image(board_display_.texture().get_pointer(), make_im_vec2(board_display_.texture().size()));
         ImGui::End();
@@ -365,17 +431,15 @@ class ChessApplication
 
     void on_grid_cell_clicked(const Point& point)
     {
-        const auto coord = transform_grid_view_to_chess(point);
-
         const auto lock = std::lock_guard{pieces_mutex_};
+        const auto coord = transform_grid_view_to_chess(point);
         if (selected_piece_coordinate_.has_value()) {
             if (!selected_piece_valid_moves_.contains(coord)) {
                 spdlog::debug("invalid move");
             } else {
                 const auto move = GameBoard::Move{*selected_piece_coordinate_, coord};
-                if (pieces_.is_promotion_move(move)) {
-                    selecting_promotion_ = true;
-                }
+                move_selection_ = move;
+                selecting_promotion_ = pieces_.is_promotion_move(move);
             }
             selected_piece_coordinate_ = std::nullopt;
             selected_piece_valid_moves_.clear();
@@ -461,11 +525,16 @@ class ChessApplication
 
     static constexpr const char* sprite_map_filename = "resources/pieces_sprite_map.svg";
     SpriteGrid<Piece> pieces_sprite_map_;
+    std::map<Piece, sdl::Texture> piece_textures_;
+    std::array<PieceType, 4> promotion_piece_types_{
+        PieceType::knight, PieceType::bishop, PieceType::rook, PieceType::queen};
 
     std::mutex pieces_mutex_;
     GameBoard pieces_;
     std::optional<Position> selected_piece_coordinate_;
     std::set<Position> selected_piece_valid_moves_;
+    std::atomic<std::optional<GameBoard::Move>> move_selection_;
+    std::optional<PieceType> promotion_selection_;
     std::atomic_bool selecting_promotion_{false};
     std::atomic_bool highlight_attacked_{false};
 
@@ -500,8 +569,8 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char* argv[])
         .title = "Chess",
         .x_position = SDL_WINDOWPOS_UNDEFINED,
         .y_position = SDL_WINDOWPOS_UNDEFINED,
-        .width = 480,
-        .height = 480,
+        .width = 800,
+        .height = 600,
         .flags = SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE};
     static constexpr auto renderer_config =
         sdl::RendererConfig{.index = -1, .flags = SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC};
