@@ -3,11 +3,16 @@ add_subdirectory(bit-board)
 
 add_library(imgui)
 target_compile_features(imgui PUBLIC cxx_std_20)
+
+option(IMGUI_USE_STDLIB_SUPPORT "" ON)
+option(IMGUI_DEFINE_MATH_OPERATORS "" OFF)
+
+target_compile_definitions(imgui PRIVATE IMGUI_DEFINE_MATH_OPERATORS)
+
 target_include_directories(imgui PUBLIC ${CMAKE_CURRENT_LIST_DIR}/imgui)
 
 file(GLOB IMGUI_HEADERS CONFIGURE_DEPENDS imgui/*.h)
 file(GLOB IMGUI_SOURCES CONFIGURE_DEPENDS imgui/*.cpp)
-option(IMGUI_USE_STDLIB_SUPPORT "" ON)
 if(IMGUI_USE_STDLIB_SUPPORT)
     list(APPEND IMGUI_HEADERS imgui/misc/cpp/imgui_stdlib.h)
     list(APPEND IMGUI_SOURCES imgui/misc/cpp/imgui_stdlib.cpp)

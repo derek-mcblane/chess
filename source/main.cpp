@@ -15,6 +15,7 @@
 #include "imgui.h"
 
 #include <spdlog/cfg/env.h>
+#include <spdlog/fmt/fmt.h>
 #include <spdlog/sinks/basic_file_sink.h>
 #include <spdlog/spdlog.h>
 
@@ -273,18 +274,30 @@ class ChessApplication
         if (selecting_promotion_) {
             ImGui::OpenPopup("Promotion");
         }
-        if (ImGui::BeginPopupModal("Promotion", nullptr)) {
+        const auto promotion_window_flags =
+            ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove;
+        ImGui::SetNextWindowSize(ImVec2(300.F, 120.F));
+        const auto window_center = ImVec2(
+            ImGui::GetWindowPos().x + ImGui::GetWindowSize().x / 2.F,
+            ImGui::GetWindowPos().y + ImGui::GetWindowSize().y / 2.F
+        );
+        ImGui::SetNextWindowPos(window_center, 0, ImVec2(0.5F, 0.5F));
+        if (ImGui::BeginPopupModal("Promotion", nullptr, promotion_window_flags)) {
             for (const auto piece_type : promotion_piece_types_) {
                 const auto piece = Piece{pieces_.active_color(), piece_type};
                 const auto& texture = piece_textures_.at(piece);
 
-                auto button_size = ImVec2(50.0F, 50.0F);
-                auto uv0 = ImVec2(0.0F, 0.0F);
-                auto uv1 = ImVec2(1.0F, 1.0F);
-                auto bg_col = ImVec4(0.0F, 0.0F, 0.0F, 1.0F);
-                auto tint_col = ImVec4(1.0F, 1.0F, 1.0F, 1.0F);
+                auto button_size = ImVec2(50.F, 50.F);
+                auto bg_col = ImVec4(0.F, 0.F, 0.F, 1.F);
+                auto tint_col = ImVec4(1.F, 1.F, 1.F, 1.F);
                 if (ImGui::ImageButton(
-                        piece.to_string().c_str(), texture.get_pointer(), button_size, uv0, uv1, bg_col, tint_col
+                        piece.to_string().c_str(),
+                        texture.get_pointer(),
+                        button_size,
+                        ImVec2(0.F, 0.F),
+                        ImVec2(1.F, 1.F),
+                        bg_col,
+                        tint_col
                     )) {
                     promotion_selection_ = piece_type;
                     selecting_promotion_ = false;
@@ -439,7 +452,8 @@ class ChessApplication
             } else {
                 const auto move = GameBoard::Move{*selected_piece_coordinate_, coord};
                 move_selection_ = move;
-                selecting_promotion_ = pieces_.is_promotion_move(move);
+                // selecting_promotion_ = pieces_.is_promotion_move(move);
+                selecting_promotion_ = true;
             }
             selected_piece_coordinate_ = std::nullopt;
             selected_piece_valid_moves_.clear();
