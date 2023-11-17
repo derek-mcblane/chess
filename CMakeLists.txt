@@ -16,8 +16,8 @@ add_subdirectory(source)
 
 install(DIRECTORY resources DESTINATION bin)
 
-option(ENABLE_TESTING "Enable project tests" ON)
-if (ENABLE_TESTING)
+option(${PROJECT_NAME}_ENABLE_TESTING "Enable project tests" OFF)
+if (${${PROJECT_NAME}_ENABLE_TESTING})
     enable_testing()
     add_subdirectory(tests)
 endif()
