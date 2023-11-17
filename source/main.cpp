@@ -98,10 +98,16 @@ Position transform_grid_view_to_chess(Point coordinate)
     return {coordinate.y, coordinate.x};
 }
 
-template <typename Rectangle>
+template <sdl::RectangleT Rectangle>
 sdl::Point<sdl::rectangle_dimension_type<Rectangle>> rectangle_center(const Rectangle rectangle)
 {
     return {rectangle.x + rectangle.w / 2, rectangle.y + rectangle.h / 2};
+}
+
+template <sdl::RectangleT Rectangle>
+sdl::Point<float> rectangle_center_f(const Rectangle rectangle)
+{
+    return {rectangle.x + rectangle.w / 2.0F, rectangle.y + rectangle.h / 2.0F};
 }
 
 template <typename Rectangle>
@@ -269,19 +275,17 @@ class ChessApplication
         const auto board_display_origin =
             make_point(ImGui::GetWindowPos()) + make_point(ImGui::GetWindowContentRegionMin());
         const auto board_display_size = make_point(ImGui::GetContentRegionAvail());
-        update_board_display_region(sdl::make_rectangle(board_display_origin, board_display_size));
+        const auto board_display_rectangle = sdl::make_rectangle(board_display_origin, board_display_size);
+        update_board_display_region(board_display_rectangle);
 
         if (selecting_promotion_) {
             ImGui::OpenPopup("Promotion");
         }
         const auto promotion_window_flags =
-            ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove;
-        ImGui::SetNextWindowSize(ImVec2(300.F, 120.F));
-        const auto window_center = ImVec2(
-            ImGui::GetWindowPos().x + ImGui::GetWindowSize().x / 2.F,
-            ImGui::GetWindowPos().y + ImGui::GetWindowSize().y / 2.F
-        );
-        ImGui::SetNextWindowPos(window_center, 0, ImVec2(0.5F, 0.5F));
+            ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoMove;
+
+        const auto board_center = rectangle_center_f(board_display_rectangle);
+        ImGui::SetNextWindowPos(ImVec2(board_center.x, board_center.y), 0, ImVec2(0.5F, 0.5F));
         if (ImGui::BeginPopupModal("Promotion", nullptr, promotion_window_flags)) {
             for (const auto piece_type : promotion_piece_types_) {
                 const auto piece = Piece{pieces_.active_color(), piece_type};
