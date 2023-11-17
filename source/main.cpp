@@ -596,7 +596,6 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char* argv[])
     auto imgui_context_cleanup = gsl::finally([] { ImGui::DestroyContext(); });
 
     ImGui::GetIO().ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
-    ImGui::GetIO().ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;
     ImGui::GetIO().ConfigFlags |= ImGuiConfigFlags_DockingEnable;
 
     ImGui::StyleColorsDark();
