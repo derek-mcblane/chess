@@ -275,8 +275,7 @@ class ChessApplication
         const auto board_display_origin =
             make_point(ImGui::GetWindowPos()) + make_point(ImGui::GetWindowContentRegionMin());
         const auto board_display_size = make_point(ImGui::GetContentRegionAvail());
-        const auto board_display_rectangle = sdl::make_rectangle(board_display_origin, board_display_size);
-        update_board_display_region(board_display_rectangle);
+        update_board_display_region(sdl::make_rectangle(board_display_origin, board_display_size));
 
         if (selecting_promotion_) {
             ImGui::OpenPopup("Promotion");
@@ -284,14 +283,15 @@ class ChessApplication
         const auto promotion_window_flags =
             ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoMove;
 
-        const auto board_center = rectangle_center_f(board_display_rectangle);
+        const auto board_center = rectangle_center_f(board_display_.region());
         ImGui::SetNextWindowPos(ImVec2(board_center.x, board_center.y), 0, ImVec2(0.5F, 0.5F));
         if (ImGui::BeginPopupModal("Promotion", nullptr, promotion_window_flags)) {
             for (const auto piece_type : promotion_piece_types_) {
                 const auto piece = Piece{pieces_.active_color(), piece_type};
                 const auto& texture = piece_textures_.at(piece);
 
-                auto button_size = ImVec2(50.F, 50.F);
+                const auto cell_size = board_display_.cell_size_f();
+                auto button_size = ImVec2(cell_size.x, cell_size.y);
                 auto bg_col = ImVec4(0.F, 0.F, 0.F, 1.F);
                 auto tint_col = ImVec4(1.F, 1.F, 1.F, 1.F);
                 if (ImGui::ImageButton(
@@ -456,8 +456,7 @@ class ChessApplication
             } else {
                 const auto move = GameBoard::Move{*selected_piece_coordinate_, coord};
                 move_selection_ = move;
-                // selecting_promotion_ = pieces_.is_promotion_move(move);
-                selecting_promotion_ = true;
+                selecting_promotion_ = pieces_.is_promotion_move(move);
             }
             selected_piece_coordinate_ = std::nullopt;
             selected_piece_valid_moves_.clear();
