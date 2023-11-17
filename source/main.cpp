@@ -261,25 +261,13 @@ class ChessApplication
         renderer_.clear();
     }
 
-    void render_frame()
+    void popup_prompt_if_selecting_promotion()
     {
-        using namespace sdl::point_operators;
-
-        ImGui::DockSpaceOverViewport(ImGui::GetMainViewport(), ImGuiDockNodeFlags_PassthruCentralNode);
-        ImGui::ShowDemoWindow(&show_demo_window_);
-
-        show_menu();
-
-        ImGui::Begin("Game Window");
-
-        const auto board_display_origin =
-            make_point(ImGui::GetWindowPos()) + make_point(ImGui::GetWindowContentRegionMin());
-        const auto board_display_size = make_point(ImGui::GetContentRegionAvail());
-        update_board_display_region(sdl::make_rectangle(board_display_origin, board_display_size));
-
-        if (selecting_promotion_) {
-            ImGui::OpenPopup("Promotion");
+        if (!selecting_promotion_) {
+            return;
         }
+
+        ImGui::OpenPopup("Promotion");
         const auto promotion_window_flags =
             ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoMove;
 
@@ -311,6 +299,25 @@ class ChessApplication
             }
             ImGui::EndPopup();
         }
+    }
+
+    void render_frame()
+    {
+        using namespace sdl::point_operators;
+
+        ImGui::DockSpaceOverViewport(ImGui::GetMainViewport(), ImGuiDockNodeFlags_PassthruCentralNode);
+        ImGui::ShowDemoWindow(&show_demo_window_);
+
+        show_menu();
+
+        ImGui::Begin("Game Window");
+
+        const auto board_display_origin =
+            make_point(ImGui::GetWindowPos()) + make_point(ImGui::GetWindowContentRegionMin());
+        const auto board_display_size = make_point(ImGui::GetContentRegionAvail());
+        update_board_display_region(sdl::make_rectangle(board_display_origin, board_display_size));
+
+        popup_prompt_if_selecting_promotion();
 
         ImGui::Image(board_display_.texture().get_pointer(), make_im_vec2(board_display_.texture().size()));
         ImGui::End();
