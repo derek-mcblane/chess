@@ -6,4 +6,4 @@
 	url = git@github.com:derek-mcblane/bit-board.git
 [submodule "external/imgui"]
 	path = external/imgui
-	url = git@github.com:ocornut/imgui.git
+	url = git@github.com:derek-mcblane/imgui.git
