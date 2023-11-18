@@ -32,8 +32,6 @@
 
 namespace chrono = std::chrono;
 using namespace chess;
-using Position = dm::Vec2<int>;
-using Point = sdl::Point<int>;
 
 template <>
 struct fmt::formatter<SDL_MouseButtonEvent> : fmt::formatter<std::string>
@@ -59,7 +57,7 @@ struct fmt::formatter<SDL_MouseButtonEvent> : fmt::formatter<std::string>
     }
 };
 
-template <>
+template <sdl::PointT Point>
 struct fmt::formatter<Point> : fmt::formatter<std::string>
 {
     auto format(Point point, format_context& ctx) -> decltype(ctx.out())
@@ -88,12 +86,12 @@ inline sdl::Point<int> make_point(ImVec2 im_vec2)
     return make_point(im_vec2.x, im_vec2.y);
 }
 
-Point transform_chess_to_grid_view(Position coordinate)
+sdl::Point<int> transform_chess_to_grid_view(dm::Vec2<int> coordinate)
 {
     return {.x = coordinate.y(), .y = coordinate.x()};
 }
 
-Position transform_grid_view_to_chess(Point coordinate)
+dm::Vec2<int> transform_grid_view_to_chess(sdl::Point<int> coordinate)
 {
     return {coordinate.y, coordinate.x};
 }
@@ -110,19 +108,19 @@ sdl::Point<float> rectangle_center_f(const Rectangle rectangle)
     return {rectangle.x + rectangle.w / 2.0F, rectangle.y + rectangle.h / 2.0F};
 }
 
-template <typename Rectangle>
+template <sdl::RectangleT Rectangle>
 sdl::Point<sdl::rectangle_dimension_type<Rectangle>> rectangle_origin(const Rectangle rectangle)
 {
     return {rectangle.x, rectangle.y};
 }
 
-template <typename Rectangle>
+template <sdl::RectangleT Rectangle>
 sdl::rectangle_dimension_type<Rectangle> rectangle_area(const Rectangle rectangle)
 {
     return rectangle.w * rectangle.h;
 }
 
-template <typename Point>
+template <sdl::PointT Point>
 sdl::point_dimension_type<Point> size_area(Point size)
 {
     return size.x * size.y;
@@ -158,7 +156,7 @@ class ChessApplication
               {board_size, board_size},
               {0, 0, board_display_texture_properties_.width, board_display_texture_properties_.height}},
           pieces_sprite_map_{
-              Point{6, 2},
+              sdl::Point<int>{6, 2},
               {
                   {{PieceColor::white, PieceType::king}, {0, 0}},
                   {{PieceColor::white, PieceType::queen}, {1, 0}},
@@ -176,7 +174,7 @@ class ChessApplication
     {
         IMGUI_CHECKVERSION();
         initialize_event_handlers();
-        board_display_.set_on_cell_clicked_callback([this](const Point& point) { on_grid_cell_clicked(point); });
+        board_display_.set_on_cell_clicked_callback([this](const sdl::Point<int>& point) { on_grid_cell_clicked(point); });
 
         auto pieces_image = sdl::image::load_sized_svg(sprite_map_filename, {1000, 0});
         pieces_sprite_map_.texture() = sdl::Texture{renderer_.make_texture_from_surface(pieces_image.get())};
@@ -384,7 +382,7 @@ class ChessApplication
         board_display_.set_origin(rectangle_origin(region));
 
         auto min_length = (std::min(region.w, region.h) / board_size) * board_size;
-        const auto new_size = ::Point{min_length, min_length};
+        const auto new_size = sdl::Point<int>{min_length, min_length};
         if (board_display_.size() == new_size) {
             return;
         }
@@ -458,7 +456,7 @@ class ChessApplication
         renderer_.set_draw_blend_mode(SDL_BLENDMODE_NONE);
         for (int col = 0; col < board_display_.grid_size.x; ++col) {
             for (int row = 0; row < board_display_.grid_size.y; ++row) {
-                const auto coord = Position{row, col};
+                const auto coord = dm::Vec2<int>{row, col};
 
                 const auto piece = pieces_.piece_at(coord);
                 if (!piece.has_value()) {
@@ -473,7 +471,7 @@ class ChessApplication
         }
     }
 
-    void on_grid_cell_clicked(const Point& point)
+    void on_grid_cell_clicked(const sdl::Point<int>& point)
     {
         const auto lock = std::lock_guard{pieces_mutex_};
         const auto coord = transform_grid_view_to_chess(point);
@@ -523,7 +521,7 @@ class ChessApplication
                 spdlog::debug(
                     "[SDL_MOUSEBUTTONDOWN button={}, position={}",
                     event->button.button,
-                    Point{event->button.x, event->button.y}
+                    sdl::Point<int>{event->button.x, event->button.y}
                 );
                 mouse_button_down_event_handlers_.call_all(event->button);
                 break;
@@ -531,7 +529,7 @@ class ChessApplication
                 spdlog::debug(
                     "[SDL_MOUSEBUTTONUP button={}, position={}",
                     event->button.button,
-                    Point{event->button.x, event->button.y}
+                    sdl::Point<int>{event->button.x, event->button.y}
                 );
                 mouse_button_up_event_handlers_.call_all(event->button);
                 break;
@@ -578,8 +576,8 @@ class ChessApplication
 
     std::mutex pieces_mutex_;
     GameBoard pieces_;
-    std::optional<Position> selected_piece_coordinate_;
-    std::set<Position> selected_piece_valid_moves_;
+    std::optional<dm::Vec2<int>> selected_piece_coordinate_;
+    std::set<dm::Vec2<int>> selected_piece_valid_moves_;
     std::atomic<std::optional<GameBoard::Move>> move_selection_;
     std::optional<PieceType> promotion_selection_;
     std::atomic_bool selecting_promotion_{false};
