@@ -174,6 +174,11 @@ bool GameBoard::is_in_stalemate() const
     return !is_color_in_check(active_color()) && !has_valid_move();
 }
 
+bool GameBoard::is_game_over() const
+{
+    return is_in_checkmate() || is_in_stalemate();
+}
+
 GameBoard::Position GameBoard::active_king_position() const
 {
     return (active_color_board() & kings()).to_position();

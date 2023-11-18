@@ -32,6 +32,7 @@ class GameBoard
     [[nodiscard]] bool is_active_in_check() const;
     [[nodiscard]] bool is_in_checkmate() const;
     [[nodiscard]] bool is_in_stalemate() const;
+    [[nodiscard]] bool is_game_over() const;
     [[nodiscard]] Position active_king_position() const;
 
   private:

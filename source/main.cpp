@@ -261,19 +261,15 @@ class ChessApplication
         renderer_.clear();
     }
 
-    void popup_prompt_if_selecting_promotion()
+    void popup_promotion_prompt()
     {
-        if (!selecting_promotion_) {
-            return;
-        }
-
         ImGui::OpenPopup("Promotion");
-        const auto promotion_window_flags =
+        const auto window_flags =
             ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoMove;
 
         const auto board_center = rectangle_center_f(board_display_.region());
         ImGui::SetNextWindowPos(ImVec2(board_center.x, board_center.y), 0, ImVec2(0.5F, 0.5F));
-        if (ImGui::BeginPopupModal("Promotion", nullptr, promotion_window_flags)) {
+        if (ImGui::BeginPopupModal("Promotion", nullptr, window_flags)) {
             for (const auto piece_type : promotion_piece_types_) {
                 const auto piece = Piece{pieces_.active_color(), piece_type};
                 const auto& texture = piece_textures_.at(piece);
@@ -301,6 +297,23 @@ class ChessApplication
         }
     }
 
+    void popup_game_over()
+    {
+        ImGui::OpenPopup("GameOver");
+        const auto window_flags =
+            ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoMove;
+
+        const auto board_center = rectangle_center_f(board_display_.region());
+        ImGui::SetNextWindowPos(ImVec2(board_center.x, board_center.y), 0, ImVec2(0.5F, 0.5F));
+        if (ImGui::BeginPopupModal("GameOver", nullptr, window_flags)) {
+            ImGui::Text("Game Over!");
+            if (ImGui::Button("OK", ImVec2(120, 0))) {
+                ImGui::CloseCurrentPopup();
+            }
+            ImGui::EndPopup();
+        }
+    }
+
     void render_frame()
     {
         using namespace sdl::point_operators;
@@ -317,12 +330,16 @@ class ChessApplication
         const auto board_display_size = make_point(ImGui::GetContentRegionAvail());
         update_board_display_region(sdl::make_rectangle(board_display_origin, board_display_size));
 
-        popup_prompt_if_selecting_promotion();
+        render_game();
+        if (selecting_promotion_) {
+            popup_promotion_prompt();
+        }
+        if (pieces_.is_game_over()) {
+            popup_game_over();
+        }
 
         ImGui::Image(board_display_.texture().get_pointer(), make_im_vec2(board_display_.texture().size()));
         ImGui::End();
-
-        render_game();
 
         ImGui::Render();
         ImGui_ImplSDLRenderer2_RenderDrawData(ImGui::GetDrawData());
@@ -463,7 +480,8 @@ class ChessApplication
             } else {
                 const auto move = GameBoard::Move{*selected_piece_coordinate_, coord};
                 move_selection_ = move;
-                selecting_promotion_ = pieces_.is_promotion_move(move);
+                // selecting_promotion_ = pieces_.is_promotion_move(move);
+                selecting_promotion_ = true;
             }
             selected_piece_coordinate_ = std::nullopt;
             selected_piece_valid_moves_.clear();
