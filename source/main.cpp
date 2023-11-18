@@ -319,7 +319,10 @@ class ChessApplication
         using namespace sdl::point_operators;
 
         ImGui::DockSpaceOverViewport(ImGui::GetMainViewport(), ImGuiDockNodeFlags_PassthruCentralNode);
+
+#ifdef IMGUI_INCLUDE_DEMO_WINDOW
         ImGui::ShowDemoWindow(&show_demo_window_);
+#endif
 
         show_menu();
 
@@ -549,7 +552,9 @@ class ChessApplication
 
     std::atomic_bool running_{true};
 
+#ifdef IMGUI_INCLUDE_DEMO_WINDOW
     bool show_demo_window_ = true;
+#endif
 
     using fp_milliseconds = chrono::duration<float, chrono::milliseconds::period>;
     static constexpr int max_frames_per_second = 60;

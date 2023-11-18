@@ -12,6 +12,8 @@ set(CHESS_WARNING_OPTIONS
 )
 
 add_subdirectory(external)
+
+add_compile_definitions($<$<BOOL:${IMGUI_INCLUDE_DEMO_WINDOW}>:IMGUI_INCLUDE_DEMO_WINDOW>)
 add_subdirectory(source)
 
 install(DIRECTORY resources DESTINATION bin)
