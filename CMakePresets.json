@@ -8,8 +8,7 @@
       "installDir": "${sourceDir}/install/debug",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Debug",
-        "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
-        "IMGUI_INCLUDE_DEMO_WINDOW": "ON"
+        "CMAKE_EXPORT_COMPILE_COMMANDS": "ON"
       }
     },
     {
@@ -19,7 +18,8 @@
       "installDir": "${sourceDir}/install/release",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Release",
-        "CMAKE_EXPORT_COMPILE_COMMANDS": "ON"
+        "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
+        "IMGUI_INCLUDE_DEMO_WINDOW": "OFF"
       }
     },
     {

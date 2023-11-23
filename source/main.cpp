@@ -2,20 +2,22 @@
 #include "game.h"
 #include "grid_view.h"
 #include "pieces.h"
+#include "sdl_point.h"
+#include "sdl_rectangle.h"
 #include "sprite_map_grid.h"
 #include "timing.h"
 
-#include "vec2_formatter.h"
+#include "sdl_fmt.h"
+#include "vec2_fmt.h"
 
 #include "sdlpp.h"
 #include "sdlpp_image.h"
 
-#include "backends/imgui_impl_sdl2.h"
-#include "backends/imgui_impl_sdlrenderer2.h"
-#include "imgui.h"
+#include <backends/imgui_impl_sdl2.h>
+#include <backends/imgui_impl_sdlrenderer2.h>
+#include <imgui.h>
 
 #include <spdlog/cfg/env.h>
-#include <spdlog/fmt/fmt.h>
 #include <spdlog/sinks/basic_file_sink.h>
 #include <spdlog/spdlog.h>
 
@@ -33,38 +35,10 @@
 namespace chrono = std::chrono;
 using namespace chess;
 
-template <>
-struct fmt::formatter<SDL_MouseButtonEvent> : fmt::formatter<std::string>
+inline sdl::Point<int> make_point(ImVec2 im_vec2)
 {
-    auto format(SDL_MouseButtonEvent event, format_context& ctx) -> decltype(ctx.out())
-    {
-        return fmt::format_to(
-            ctx.out(),
-            "[SDL_MouseButtonEvent"
-            "type={}, timestamp={}, windowID={}, which={}, button={}, "
-            "state={}, clicks={}, padding1={}, x={}, y={}]",
-            event.type,
-            event.timestamp,
-            event.windowID,
-            event.which,
-            event.button,
-            event.state,
-            event.clicks,
-            event.padding1,
-            event.x,
-            event.y
-        );
-    }
-};
-
-template <sdl::PointT Point>
-struct fmt::formatter<Point> : fmt::formatter<std::string>
-{
-    auto format(Point point, format_context& ctx) -> decltype(ctx.out())
-    {
-        return fmt::format_to(ctx.out(), "[Point x={}, y={}]", point.x, point.y);
-    }
-};
+    return make_point(im_vec2.x, im_vec2.y);
+}
 
 inline ImVec2 make_im_vec2(int x, int y)
 {
@@ -76,16 +50,6 @@ inline ImVec2 make_im_vec2(sdl::Point<int> point)
     return make_im_vec2(point.x, point.y);
 }
 
-inline sdl::Point<int> make_point(float x, float y)
-{
-    return sdl::Point<int>{gsl::narrow_cast<int>(std::ceil(x)), gsl::narrow_cast<int>(std::ceil(y))};
-}
-
-inline sdl::Point<int> make_point(ImVec2 im_vec2)
-{
-    return make_point(im_vec2.x, im_vec2.y);
-}
-
 sdl::Point<int> transform_chess_to_grid_view(dm::Vec2<int> coordinate)
 {
     return {.x = coordinate.y(), .y = coordinate.x()};
@@ -94,36 +58,6 @@ sdl::Point<int> transform_chess_to_grid_view(dm::Vec2<int> coordinate)
 dm::Vec2<int> transform_grid_view_to_chess(sdl::Point<int> coordinate)
 {
     return {coordinate.y, coordinate.x};
-}
-
-template <sdl::RectangleT Rectangle>
-sdl::Point<sdl::rectangle_dimension_type<Rectangle>> rectangle_center(const Rectangle rectangle)
-{
-    return {rectangle.x + rectangle.w / 2, rectangle.y + rectangle.h / 2};
-}
-
-template <sdl::RectangleT Rectangle>
-sdl::Point<float> rectangle_center_f(const Rectangle rectangle)
-{
-    return {rectangle.x + rectangle.w / 2.0F, rectangle.y + rectangle.h / 2.0F};
-}
-
-template <sdl::RectangleT Rectangle>
-sdl::Point<sdl::rectangle_dimension_type<Rectangle>> rectangle_origin(const Rectangle rectangle)
-{
-    return {rectangle.x, rectangle.y};
-}
-
-template <sdl::RectangleT Rectangle>
-sdl::rectangle_dimension_type<Rectangle> rectangle_area(const Rectangle rectangle)
-{
-    return rectangle.w * rectangle.h;
-}
-
-template <sdl::PointT Point>
-sdl::point_dimension_type<Point> size_area(Point size)
-{
-    return size.x * size.y;
 }
 
 namespace pallete {
@@ -152,9 +86,7 @@ class ChessApplication
     ChessApplication(sdl::Window&& window, sdl::Renderer&& renderer)
         : window_{std::move(window)},
           renderer_{std::move(renderer)},
-          board_display_{
-              {board_size, board_size},
-              {0, 0, board_display_texture_properties_.width, board_display_texture_properties_.height}},
+          board_display_{{board_size, board_size}, {0, 0, 1000, 1000}},
           pieces_sprite_map_{
               sdl::Point<int>{6, 2},
               {
@@ -174,7 +106,9 @@ class ChessApplication
     {
         IMGUI_CHECKVERSION();
         initialize_event_handlers();
-        board_display_.set_on_cell_clicked_callback([this](const sdl::Point<int>& point) { on_grid_cell_clicked(point); });
+        board_display_.set_on_cell_clicked_callback([this](const sdl::Point<int>& point) {
+            on_grid_cell_clicked(point);
+        });
 
         auto pieces_image = sdl::image::load_sized_svg(sprite_map_filename, {1000, 0});
         pieces_sprite_map_.texture() = sdl::Texture{renderer_.make_texture_from_surface(pieces_image.get())};
@@ -200,7 +134,7 @@ class ChessApplication
         renderer_.set_draw_color(pallete::white);
         renderer_.clear();
         renderer_.copy(
-            pieces_sprite_map_.texture(), pieces_sprite_map_.get_region(piece), sdl::make_rectangle({0, 0}, size)
+            pieces_sprite_map_.texture(), pieces_sprite_map_.get_region(piece), make_rectangle({0, 0}, size)
         );
 
         return texture;
@@ -314,22 +248,24 @@ class ChessApplication
 
     void render_frame()
     {
-        using namespace sdl::point_operators;
-
         ImGui::DockSpaceOverViewport(ImGui::GetMainViewport(), ImGuiDockNodeFlags_PassthruCentralNode);
 
-#ifdef IMGUI_INCLUDE_DEMO_WINDOW
-        ImGui::ShowDemoWindow(&show_demo_window_);
-#endif
+        ImGui::ShowDemoWindow();
 
         show_menu();
 
-        ImGui::Begin("Game Window");
+        ImGui::Begin("Game Window", nullptr, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse);
 
-        const auto board_display_origin =
-            make_point(ImGui::GetWindowPos()) + make_point(ImGui::GetWindowContentRegionMin());
-        const auto board_display_size = make_point(ImGui::GetContentRegionAvail());
-        update_board_display_region(sdl::make_rectangle(board_display_origin, board_display_size));
+        const auto content_origin = ImGui::GetWindowPos() + ImGui::GetWindowContentRegionMin();
+        const auto content_region = ImGui::GetContentRegionAvail();
+        const auto min_length = std::min(content_region.x, content_region.y);
+        const auto board_display_size = ImVec2(min_length, min_length);
+        const auto board_display_origin = content_origin + (content_region - board_display_size) / 2.0F;
+        update_board_display_region(make_rectangle(make_point(board_display_origin), make_point(board_display_size)));
+
+        ImGui::SetCursorScreenPos(board_display_origin);
+        ImGui::Image(board_display_.texture().get_pointer(), make_im_vec2(board_display_.texture().size()));
+        ImGui::End();
 
         render_game();
         if (selecting_promotion_) {
@@ -338,9 +274,6 @@ class ChessApplication
         if (pieces_.is_game_over()) {
             popup_game_over();
         }
-
-        ImGui::Image(board_display_.texture().get_pointer(), make_im_vec2(board_display_.texture().size()));
-        ImGui::End();
 
         ImGui::Render();
         ImGui_ImplSDLRenderer2_RenderDrawData(ImGui::GetDrawData());
@@ -376,29 +309,24 @@ class ChessApplication
         using namespace sdl::point_operators;
 
         if (rectangle_area(region) <= 0) {
-            return;
+            throw std::invalid_argument("region has negative area");
         }
 
-        board_display_.set_origin(rectangle_origin(region));
+        const auto old_size = board_display_.size();
+        board_display_.region() = region;
 
-        auto min_length = (std::min(region.w, region.h) / board_size) * board_size;
-        const auto new_size = sdl::Point<int>{min_length, min_length};
-        if (board_display_.size() == new_size) {
-            return;
+        if (board_display_.size() != old_size) {
+            board_display_.texture_properties().set_size(board_display_.size());
+            board_display_.texture() = sdl::Texture{renderer_.make_texture(board_display_.texture_properties())};
+
+            const auto sprite_map_texture_size = sdl::Point<int>{std::max(board_display_.region().w, 100), 0};
+            auto pieces_image = sdl::image::load_sized_svg(sprite_map_filename, sprite_map_texture_size);
+            pieces_sprite_map_.texture() = sdl::Texture{renderer_.make_texture_from_surface(pieces_image.get())};
         }
-
-        board_display_.set_size(new_size);
-        board_display_texture_properties_.set_size(new_size);
-        board_display_.texture() = sdl::Texture{renderer_.make_texture(board_display_texture_properties_)};
-
-        const auto sprite_map_texture_size = sdl::Point<int>{std::max(board_display_.region().w, 100), 0};
-        auto pieces_image = sdl::image::load_sized_svg(sprite_map_filename, sprite_map_texture_size);
-        pieces_sprite_map_.texture() = sdl::Texture{renderer_.make_texture_from_surface(pieces_image.get())};
     }
 
     void render_board()
     {
-        using namespace sdl;
         renderer_.set_draw_blend_mode(SDL_BLENDMODE_NONE);
         for (int col = 0; col < board_display_.grid_size.x; ++col) {
             for (int row = 0; row < board_display_.grid_size.y; ++row) {
@@ -465,7 +393,7 @@ class ChessApplication
                 const auto piece_position =
                     board_display_.grid_cell_position_local(transform_chess_to_grid_view(coord));
                 const auto piece_size = board_display_.cell_size();
-                const auto screen_rect = sdl::make_rectangle(piece_position, piece_size);
+                const auto screen_rect = make_rectangle(piece_position, piece_size);
                 renderer_.copy(pieces_sprite_map_.texture(), pieces_sprite_map_.get_region(*piece), screen_rect);
             }
         }
@@ -550,10 +478,6 @@ class ChessApplication
 
     std::atomic_bool running_{true};
 
-#ifdef IMGUI_INCLUDE_DEMO_WINDOW
-    bool show_demo_window_ = true;
-#endif
-
     using fp_milliseconds = chrono::duration<float, chrono::milliseconds::period>;
     static constexpr int max_frames_per_second = 60;
     static constexpr auto period_duration = fp_milliseconds{1000.0F / max_frames_per_second};
@@ -564,8 +488,6 @@ class ChessApplication
 
     static constexpr auto board_size = 8;
 
-    sdl::Texture::Properties board_display_texture_properties_ = {
-        SDL_PIXELFORMAT_RGBA32, SDL_TEXTUREACCESS_TARGET, 1000, 1000};
     ClickableGrid board_display_;
 
     static constexpr const char* sprite_map_filename = "resources/pieces_sprite_map.svg";

@@ -63,7 +63,7 @@ class Widget
 
     [[nodiscard]] constexpr float area_f() const
     {
-        return static_cast<float>(region().w * region().h);
+        return static_cast<float>(area());
     }
 
   private:

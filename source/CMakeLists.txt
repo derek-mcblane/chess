@@ -28,9 +28,9 @@ target_link_libraries(ChessApp
 PRIVATE
     SDLWrap
     SDLImageWrap
-    imgui
-    imgui_SDL2Backend
-    imgui_SDL2RendererBackend
+    imgui::imgui
+    imgui::SDL2Backend
+    imgui::SDL2RendererBackend
     BitBoard
     Chess
 )

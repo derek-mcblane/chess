@@ -42,9 +42,20 @@ class ClickableGrid : public Widget
         return texture_;
     }
 
+    [[nodiscard]] const sdl::Texture::Properties& texture_properties() const
+    {
+        return texture_properties_;
+    }
+
+    [[nodiscard]] sdl::Texture::Properties& texture_properties()
+    {
+        return texture_properties_;
+    }
+
   private:
     sdl::Rectangle<int> region_;
     sdl::Texture texture_;
+    sdl::Texture::Properties texture_properties_ = {SDL_PIXELFORMAT_RGBA32, SDL_TEXTUREACCESS_TARGET, 0, 0};
     std::atomic<sdl::Point<int>> down_index_;
     std::optional<std::atomic<sdl::Point<int>>> clicked_index_;
     std::optional<OnClickedCallback> on_cell_clicked_;
