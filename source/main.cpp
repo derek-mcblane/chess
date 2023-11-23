@@ -104,7 +104,6 @@ class ChessApplication
                   {{PieceColor::black, PieceType::pawn}, {5, 1}},
               }}
     {
-        IMGUI_CHECKVERSION();
         initialize_event_handlers();
         board_display_.set_on_cell_clicked_callback([this](const sdl::Point<int>& point) {
             on_grid_cell_clicked(point);
@@ -309,7 +308,7 @@ class ChessApplication
         using namespace sdl::point_operators;
 
         if (rectangle_area(region) <= 0) {
-            throw std::invalid_argument("region has negative area");
+            throw std::invalid_argument("region has non-positive area");
         }
 
         const auto old_size = board_display_.size();
@@ -544,6 +543,11 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char* argv[])
 
     auto window = sdl::Window(window_config);
     auto renderer = sdl::Renderer(window.get_pointer(), renderer_config);
+
+    if(!IMGUI_CHECKVERSION()) {
+        spdlog::error("IMGUI_CHECKVERSION failed");
+        return EXIT_FAILURE;
+    }
 
     ImGui::CreateContext();
     auto imgui_context_cleanup = gsl::finally([] { ImGui::DestroyContext(); });
