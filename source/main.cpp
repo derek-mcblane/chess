@@ -408,8 +408,7 @@ class ChessApplication
             } else {
                 const auto move = GameBoard::Move{*selected_piece_coordinate_, coord};
                 move_selection_ = move;
-                // selecting_promotion_ = pieces_.is_promotion_move(move);
-                selecting_promotion_ = true;
+                selecting_promotion_ = pieces_.is_promotion_move(move);
             }
             selected_piece_coordinate_ = std::nullopt;
             selected_piece_valid_moves_.clear();
