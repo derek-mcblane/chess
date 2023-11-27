@@ -3,7 +3,6 @@
   "configurePresets": [
     {
       "name": "debug",
-      "generator": "Ninja",
       "binaryDir": "${sourceDir}/build/debug",
       "installDir": "${sourceDir}/install/debug",
       "cacheVariables": {
@@ -13,13 +12,12 @@
     },
     {
       "name": "release",
-      "generator": "Ninja",
       "binaryDir": "${sourceDir}/build/release",
       "installDir": "${sourceDir}/install/release",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Release",
         "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
-        "IMGUI_INCLUDE_DEMO_WINDOW": "OFF"
+        "IMGUI_DISABLE_DEMO_WINDOWS": "ON"
       }
     },
     {

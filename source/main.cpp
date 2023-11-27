@@ -21,7 +21,9 @@
 #include <spdlog/sinks/basic_file_sink.h>
 #include <spdlog/spdlog.h>
 
-#include <gsl/gsl>
+#include <gsl/util>
+
+#include <cfloat>
 
 #include <chrono>
 #include <exception>
@@ -161,6 +163,7 @@ class ChessApplication
             pieces_.make_move(*move, promotion_selection_);
             move_selection_ = std::nullopt;
             promotion_selection_ = std::nullopt;
+            show_game_over_popup_ = pieces_.is_game_over();
         }
     }
 
@@ -192,23 +195,23 @@ class ChessApplication
         renderer_.clear();
     }
 
-    void popup_promotion_prompt()
+    void show_promotion_prompt()
     {
+        const auto board_center = rectangle_center_f(board_display_.region());
+        ImGui::SetNextWindowPos(ImVec2(board_center.x, board_center.y), 0, ImVec2(0.5F, 0.5F));
+
         ImGui::OpenPopup("Promotion");
         const auto window_flags =
             ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoMove;
-
-        const auto board_center = rectangle_center_f(board_display_.region());
-        ImGui::SetNextWindowPos(ImVec2(board_center.x, board_center.y), 0, ImVec2(0.5F, 0.5F));
         if (ImGui::BeginPopupModal("Promotion", nullptr, window_flags)) {
             for (const auto piece_type : promotion_piece_types_) {
                 const auto piece = Piece{pieces_.active_color(), piece_type};
                 const auto& texture = piece_textures_.at(piece);
 
                 const auto cell_size = board_display_.cell_size_f();
-                auto button_size = ImVec2(cell_size.x, cell_size.y);
-                auto bg_col = ImVec4(0.F, 0.F, 0.F, 1.F);
-                auto tint_col = ImVec4(1.F, 1.F, 1.F, 1.F);
+                const auto button_size = ImVec2(cell_size.x, cell_size.y);
+                const auto bg_col = ImVec4(0.F, 0.F, 0.F, 1.F);
+                const auto tint_col = ImVec4(1.F, 1.F, 1.F, 1.F);
                 if (ImGui::ImageButton(
                         piece.to_string().c_str(),
                         texture.get_pointer(),
@@ -228,18 +231,25 @@ class ChessApplication
         }
     }
 
-    void popup_game_over()
+    void show_game_over_popup()
     {
+        const auto board_center = rectangle_center_f(board_display_.region());
+        ImGui::SetNextWindowPos(ImVec2(board_center.x, board_center.y), 0, ImVec2(0.5F, 0.5F));
+
         ImGui::OpenPopup("GameOver");
         const auto window_flags =
             ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoMove;
-
-        const auto board_center = rectangle_center_f(board_display_.region());
-        ImGui::SetNextWindowPos(ImVec2(board_center.x, board_center.y), 0, ImVec2(0.5F, 0.5F));
         if (ImGui::BeginPopupModal("GameOver", nullptr, window_flags)) {
             ImGui::Text("Game Over!");
-            if (ImGui::Button("OK", ImVec2(120, 0))) {
+            if (ImGui::Button("Okay")) {
                 ImGui::CloseCurrentPopup();
+                show_game_over_popup_ = false;
+            }
+            ImGui::SameLine();
+            if (ImGui::Button("New Game")) {
+                ImGui::CloseCurrentPopup();
+                show_game_over_popup_ = false;
+                pieces_ = GameBoard{};
             }
             ImGui::EndPopup();
         }
@@ -252,27 +262,15 @@ class ChessApplication
         ImGui::ShowDemoWindow();
 
         show_menu();
-
-        ImGui::Begin("Game Window", nullptr, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse);
-
-        const auto content_origin = ImGui::GetWindowPos() + ImGui::GetWindowContentRegionMin();
-        const auto content_region = ImGui::GetContentRegionAvail();
-        const auto min_length = std::min(content_region.x, content_region.y);
-        const auto board_display_size = ImVec2(min_length, min_length);
-        const auto board_display_origin = content_origin + (content_region - board_display_size) / 2.0F;
-        update_board_display_region(make_rectangle(make_point(board_display_origin), make_point(board_display_size)));
-
-        ImGui::SetCursorScreenPos(board_display_origin);
-        ImGui::Image(board_display_.texture().get_pointer(), make_im_vec2(board_display_.texture().size()));
-        ImGui::End();
+        show_game_window();
+        if (selecting_promotion_) {
+            show_promotion_prompt();
+        }
+        if (show_game_over_popup_) {
+            show_game_over_popup();
+        }
 
         render_game();
-        if (selecting_promotion_) {
-            popup_promotion_prompt();
-        }
-        if (pieces_.is_game_over()) {
-            popup_game_over();
-        }
 
         ImGui::Render();
         ImGui_ImplSDLRenderer2_RenderDrawData(ImGui::GetDrawData());
@@ -293,6 +291,21 @@ class ChessApplication
         }
     }
 
+    void show_game_window()
+    {
+        ImGui::SetNextWindowSizeConstraints(ImVec2(100, 100), ImVec2(FLT_MAX, FLT_MAX));
+        ImGui::Begin("Game Window", nullptr, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse);
+        const auto content_origin = ImGui::GetWindowPos() + ImGui::GetWindowContentRegionMin();
+        const auto content_region = ImGui::GetContentRegionAvail();
+        const auto min_length = std::min(content_region.x, content_region.y);
+        const auto board_display_size = ImVec2(min_length, min_length);
+        const auto board_display_origin = content_origin + (content_region - board_display_size) / 2.0F;
+        update_board_display_region(make_rectangle(make_point(board_display_origin), make_point(board_display_size)));
+        ImGui::SetCursorScreenPos(board_display_origin);
+        ImGui::Image(board_display_.texture().get_pointer(), make_im_vec2(board_display_.texture().size()));
+        ImGui::End();
+    }
+
     void render_game()
     {
         SDL_Texture* original_target = renderer_.get_render_target();
@@ -307,8 +320,8 @@ class ChessApplication
     {
         using namespace sdl::point_operators;
 
-        if (rectangle_area(region) <= 0) {
-            throw std::invalid_argument("region has non-positive area");
+        if (region.h <= 0 || region.w <= 0) {
+            return;
         }
 
         const auto old_size = board_display_.size();
@@ -502,6 +515,7 @@ class ChessApplication
     std::optional<PieceType> promotion_selection_;
     std::atomic_bool selecting_promotion_{false};
     std::atomic_bool highlight_attacked_{false};
+    bool show_game_over_popup_{false};
 
     EventHandlers<SDL_QuitEvent> quit_event_handlers_;
     EventHandlers<SDL_MouseButtonEvent> mouse_button_down_event_handlers_;
@@ -543,7 +557,7 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char* argv[])
     auto window = sdl::Window(window_config);
     auto renderer = sdl::Renderer(window.get_pointer(), renderer_config);
 
-    if(!IMGUI_CHECKVERSION()) {
+    if (!IMGUI_CHECKVERSION()) {
         spdlog::error("IMGUI_CHECKVERSION failed");
         return EXIT_FAILURE;
     }
