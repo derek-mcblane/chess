@@ -32,7 +32,8 @@
   "buildPresets": [
     {
       "name": "debug",
-      "configurePreset": "debug"
+      "configurePreset": "debug",
+      "jobs": 8
     },
     {
       "name": "debug-install",
@@ -41,7 +42,8 @@
     },
     {
       "name": "release",
-      "configurePreset": "release"
+      "configurePreset": "release",
+      "jobs": 8
     },
     {
       "name": "release-install",
@@ -51,7 +53,8 @@
     {
       "name": "VS-debug",
       "configurePreset": "VS",
-      "configuration": "Debug"
+      "configuration": "Debug",
+      "jobs": 8
     },
     {
       "name": "VS-debug-install",
@@ -62,7 +65,8 @@
     {
       "name": "VS-release",
       "configurePreset": "VS",
-      "configuration": "Release"
+      "configuration": "Release",
+      "jobs": 8
     },
     {
       "name": "VS-release-install",
