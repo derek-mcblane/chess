@@ -293,7 +293,7 @@ class ChessApplication
 
     void show_game_window()
     {
-        ImGui::SetNextWindowSizeConstraints(ImVec2(100, 100), ImVec2(FLT_MAX, FLT_MAX));
+        ImGui::SetNextWindowSizeConstraints(ImVec2(400, 400), ImVec2(FLT_MAX, FLT_MAX));
         ImGui::Begin("Game Window", nullptr, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse);
         const auto content_origin = ImGui::GetWindowPos() + ImGui::GetWindowContentRegionMin();
         const auto content_region = ImGui::GetContentRegionAvail();
