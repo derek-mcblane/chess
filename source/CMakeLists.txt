@@ -1,7 +1,3 @@
-find_package(Boost 1.80 REQUIRED)
-find_package(spdlog REQUIRED)
-find_package(Microsoft.GSL CONFIG REQUIRED)
-
 # Chess
 add_library(Chess "")
 target_compile_features(Chess PUBLIC cxx_std_20)

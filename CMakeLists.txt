@@ -11,6 +11,11 @@ set(CHESS_WARNING_OPTIONS
     "$<${msvc_cxx}:$<BUILD_INTERFACE:-W3>>"
 )
 
+find_package(SDLWrap CONFIG)
+find_package(spdlog REQUIRED)
+find_package(Microsoft.GSL CONFIG REQUIRED)
+find_package(Boost 1.80 REQUIRED)
+
 add_subdirectory(external)
 add_subdirectory(source)
 
