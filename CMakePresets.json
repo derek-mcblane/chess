@@ -2,23 +2,26 @@
   "version": 6,
   "configurePresets": [
     {
-      "name": "debug",
-      "generator": "Ninja",
-      "binaryDir": "${sourceDir}/build/debug",
-      "installDir": "${sourceDir}/install/debug",
+      "name": "base",
+      "binaryDir": "${sourceDir}/build/${presetName}",
+      "installDir": "${sourceDir}/install",
       "cacheVariables": {
-        "CMAKE_BUILD_TYPE": "Debug",
         "CMAKE_EXPORT_COMPILE_COMMANDS": "ON"
       }
     },
     {
+      "name": "debug",
+      "inherits": ["base"],
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug"
+      }
+    },
+    {
       "name": "release",
-      "generator": "Ninja",
-      "binaryDir": "${sourceDir}/build/release",
-      "installDir": "${sourceDir}/install/release",
+      "inherits": ["base"],
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Release",
-        "CMAKE_EXPORT_COMPILE_COMMANDS": "ON"
+        "IMGUI_DISABLE_DEMO_WINDOWS": "ON"
       }
     },
     {
@@ -31,7 +34,8 @@
   "buildPresets": [
     {
       "name": "debug",
-      "configurePreset": "debug"
+      "configurePreset": "debug",
+      "jobs": 8
     },
     {
       "name": "debug-install",
@@ -40,7 +44,8 @@
     },
     {
       "name": "release",
-      "configurePreset": "release"
+      "configurePreset": "release",
+      "jobs": 8
     },
     {
       "name": "release-install",
@@ -50,7 +55,8 @@
     {
       "name": "VS-debug",
       "configurePreset": "VS",
-      "configuration": "Debug"
+      "configuration": "Debug",
+      "jobs": 8
     },
     {
       "name": "VS-debug-install",
@@ -61,7 +67,8 @@
     {
       "name": "VS-release",
       "configurePreset": "VS",
-      "configuration": "Release"
+      "configuration": "Release",
+      "jobs": 8
     },
     {
       "name": "VS-release-install",

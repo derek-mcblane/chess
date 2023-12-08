@@ -6,46 +6,39 @@
 
 #include <optional>
 #include <set>
+#include <utility>
 
 namespace chess {
 
-class Board
+static constexpr BitBoard::Position::dimension_type black_piece_row_index{0};
+static constexpr BitBoard::Position::dimension_type black_pawn_row_index{1};
+static constexpr BitBoard::Position::dimension_type white_piece_row_index{7};
+static constexpr BitBoard::Position::dimension_type white_pawn_row_index{6};
+
+// static constexpr auto black_piece_row = BitBoard::make_row(black_piece_row_index);
+
+template <PieceColor Color>
+BitBoard piece_row()
 {
-    struct BoardState
-    {
-        BoardState(const Board& board)
-            : en_passant_square{board.en_passant_square_},
-              pawns{board.pawns_},
-              knights{board.knights_},
-              bishops{board.bishops_},
-              rooks{board.rooks_},
-              queens{board.queens_},
-              kings{board.kings_},
-              black{board.black_},
-              white{board.white_},
-              active_color{board.active_color_},
-              black_queenside_castle_piece_moved{board.black_queenside_castle_piece_moved_},
-              black_kingside_castle_piece_moved{board.black_kingside_castle_piece_moved_},
-              white_queenside_castle_piece_moved{board.white_queenside_castle_piece_moved_},
-              white_kingside_castle_piece_moved{board.white_kingside_castle_piece_moved_}
-        {}
+    if constexpr (Color == PieceColor::black) {
+        return BitBoard::make_row(black_piece_row_index);
+    } else {
+        return BitBoard::make_row(white_piece_row_index);
+    }
+}
 
-        BitBoard en_passant_square;
-        BitBoard pawns;
-        BitBoard knights;
-        BitBoard bishops;
-        BitBoard rooks;
-        BitBoard queens;
-        BitBoard kings;
-        BitBoard black;
-        BitBoard white;
-        PieceColor active_color{PieceColor::white};
-        bool black_queenside_castle_piece_moved{false};
-        bool black_kingside_castle_piece_moved{false};
-        bool white_queenside_castle_piece_moved{false};
-        bool white_kingside_castle_piece_moved{false};
-    };
+template <PieceColor Color>
+BitBoard pawn_row()
+{
+    if constexpr (Color == PieceColor::black) {
+        return BitBoard::make_row(black_pawn_row_index);
+    } else {
+        return BitBoard::make_row(white_pawn_row_index);
+    }
+}
 
+class BoardPieces
+{
   public:
     using Position = BitBoard::Position;
 
@@ -55,68 +48,225 @@ class Board
         Position to;
     };
 
-    struct PromotionMove
-    {
-        Move move;
-        std::optional<PieceType> promotion;
-    };
-
-    void set_piece(Piece piece, const Position& position);
-    void make_move(Move move);
-    void promote(PromotionMove move);
-    void clear_piece(const Position& position);
-    [[nodiscard]] bool occupied(const Position& position) const;
-    [[nodiscard]] std::optional<PieceColor> piece_color_at(const Position& position) const;
-    [[nodiscard]] std::optional<PieceType> piece_type_at(const Position& position) const;
-    [[nodiscard]] std::optional<Piece> piece_at(const Position& position) const;
-    [[nodiscard]] bool is_valid_move(Move move) const;
-    [[nodiscard]] bool is_promotion_move(Move move) const;
-    [[nodiscard]] std::vector<Board::Position> valid_moves_vector(Position from);
-    [[nodiscard]] std::set<Board::Position> valid_moves_set(Position from);
-    [[nodiscard]] PieceColor active_color() const;
-    [[nodiscard]] bool is_active_piece(const Position& position) const;
-    [[nodiscard]] std::vector<Board::Position> attacked_by_white() const;
-    [[nodiscard]] std::vector<Board::Position> attacked_by_black() const;
-
-    [[nodiscard]] static Board make_standard_setup_board();
-
-  private:
     struct BitBoardMove
     {
         BitBoard from;
         BitBoard to;
+        constexpr static BitBoardMove from_move(const Move move)
+        {
+            return {BitBoard{move.from}, BitBoard{move.to}};
+        }
     };
 
-    struct BitBoardPieceMove
+    [[nodiscard]] static BoardPieces make_standard_setup_board();
+
+    [[nodiscard]] constexpr BitBoard pawns() const noexcept
     {
-        Piece piece;
-        BitBoard from;
-        BitBoard to;
-    };
+        return pawns_;
+    }
+    [[nodiscard]] constexpr BitBoard knights() const noexcept
+    {
+        return knights_;
+    }
+    [[nodiscard]] constexpr BitBoard bishops() const noexcept
+    {
+        return bishops_;
+    }
+    [[nodiscard]] constexpr BitBoard rooks() const noexcept
+    {
+        return rooks_;
+    }
+    [[nodiscard]] constexpr BitBoard queens() const noexcept
+    {
+        return queens_;
+    }
+    [[nodiscard]] constexpr BitBoard kings() const noexcept
+    {
+        return kings_;
+    }
 
-    inline static constexpr Position::dimension_type black_piece_row{0};
-    inline static constexpr Position::dimension_type black_pawn_row{1};
-    inline static constexpr Position::dimension_type white_piece_row{7};
-    inline static constexpr Position::dimension_type white_pawn_row{6};
+    [[nodiscard]] constexpr BitBoard black() const noexcept
+    {
+        return black_;
+    }
+    [[nodiscard]] constexpr BitBoard white() const noexcept
+    {
+        return white_;
+    }
 
-    inline static constexpr BitBoard black_king_position{BitBoard::Position{0, 4}};
-    inline static constexpr BitBoard black_kingside_rook_position{BitBoard::Position{0, 7}};
-    inline static constexpr BitBoard black_queenside_rook_position{BitBoard::Position{0, 0}};
-    inline static constexpr BitBoard black_castle_kingside_king_move{BitBoard::Position{0, 6}};
-    inline static constexpr BitBoard black_castle_queenside_king_move{BitBoard::Position{0, 2}};
-    inline static constexpr BitBoard black_castle_kingside_rook_move{BitBoard::Position{0, 5}};
-    inline static constexpr BitBoard black_castle_queenside_rook_move{BitBoard::Position{0, 3}};
+    [[nodiscard]] BitBoard occupied() const noexcept
+    {
+        return black_ | white_;
+    }
 
-    inline static constexpr BitBoard white_king_position{BitBoard::Position{7, 4}};
-    inline static constexpr BitBoard white_kingside_rook_position{BitBoard::Position{7, 7}};
-    inline static constexpr BitBoard white_queenside_rook_position{BitBoard::Position{7, 0}};
-    inline static constexpr BitBoard white_castle_kingside_king_move{BitBoard::Position{7, 6}};
-    inline static constexpr BitBoard white_castle_queenside_king_move{BitBoard::Position{7, 2}};
-    inline static constexpr BitBoard white_castle_kingside_rook_move{BitBoard::Position{7, 5}};
-    inline static constexpr BitBoard white_castle_queenside_rook_move{BitBoard::Position{7, 3}};
+    template <PieceColor Color>
+    [[nodiscard]] constexpr const BitBoard& of() const noexcept
+    {
+        if constexpr (Color == PieceColor::black) {
+            return black_;
+        } else {
+            return white_;
+        }
+    }
+    [[nodiscard]] constexpr const BitBoard& of(const PieceColor color) const noexcept
+    {
+        switch (color) {
+        case PieceColor::black:
+            return black_;
+        case PieceColor::white:
+            return white_;
+        }
+    }
 
-    std::vector<BoardState> history_;
-    BitBoard en_passant_square_;
+    template <PieceType Type>
+    [[nodiscard]] constexpr const BitBoard& of() const noexcept
+    {
+        if constexpr (Type == PieceType::pawn) {
+            return pawns_;
+        } else if constexpr (Type == PieceType::knight) {
+            return knights_;
+        } else if constexpr (Type == PieceType::bishop) {
+            return bishops_;
+        } else if constexpr (Type == PieceType::rook) {
+            return rooks_;
+        } else if constexpr (Type == PieceType::queen) {
+            return queens_;
+        } else if constexpr (Type == PieceType::king) {
+            return kings_;
+        }
+    }
+    [[nodiscard]] constexpr const BitBoard& of(const PieceType type) const noexcept
+    {
+        switch (type) {
+        case PieceType::pawn:
+            return pawns_;
+        case PieceType::knight:
+            return knights_;
+        case PieceType::bishop:
+            return bishops_;
+        case PieceType::rook:
+            return rooks_;
+        case PieceType::queen:
+            return queens_;
+        case PieceType::king:
+            return kings_;
+        }
+    }
+
+    template <Piece Piece>
+    [[nodiscard]] constexpr BitBoard of() const noexcept
+    {
+        return of<Piece.color>() & of<Piece.type>();
+    }
+    [[nodiscard]] constexpr BitBoard of(const Piece piece) const noexcept
+    {
+        return of(piece.color) & of(piece.type);
+    }
+
+    [[nodiscard]] std::optional<Piece> at(BitBoard position) const noexcept;
+    [[nodiscard]] std::optional<Piece> at(const Position& position) const;
+    [[nodiscard]] Piece at_checked(BitBoard position) const;
+    [[nodiscard]] Piece at_checked(const Position& position) const;
+    [[nodiscard]] std::optional<PieceColor> color_at(BitBoard position) const noexcept;
+    [[nodiscard]] std::optional<PieceColor> color_at(const Position& position) const;
+    [[nodiscard]] std::optional<PieceType> type_at(BitBoard position) const noexcept;
+    [[nodiscard]] std::optional<PieceType> type_at(const Position& position) const;
+
+    template <Piece Piece>
+    void clear(const BitBoard board) noexcept
+    {
+        of<Piece.color>().clear(board);
+        of<Piece.type>().clear(board);
+    }
+    void clear(const Piece piece, const BitBoard board) noexcept
+    {
+        of(piece.color).clear(board);
+        of(piece.type).clear(board);
+    }
+    void clear(const Position& position)
+    {
+        clear(BitBoard{position});
+    }
+
+    void clear(BitBoard board) noexcept
+    {
+        black_.clear(board);
+        white_.clear(board);
+        pawns_.clear(board);
+        knights_.clear(board);
+        bishops_.clear(board);
+        rooks_.clear(board);
+        queens_.clear(board);
+        kings_.clear(board);
+    }
+
+    template <Piece Piece>
+    void set(const BitBoard positions)
+    {
+        clear(positions);
+        of<Piece.type>().set(positions);
+        of<Piece.color>().set(positions);
+    }
+    template <Piece Piece>
+    void set(const Position& position)
+    {
+        set<Piece>(BitBoard{position});
+    }
+
+    void set(const Piece piece, const BitBoard positions) noexcept
+    {
+        clear(positions);
+        of(piece.type).set(positions);
+        of(piece.color).set(positions);
+    }
+    void set(const Piece piece, const Position& position)
+    {
+        set(piece, BitBoard{position});
+    }
+
+    template <Piece Piece>
+    void move(const BitBoardMove move)
+    {
+        assert(at_checked(move.from) == Piece);
+        clear<Piece>(move.from);
+        set<Piece>(move.to);
+        assert(!at(move.from).has_value());
+        assert(at_checked(move.to) == Piece);
+    }
+    void move(const Piece piece, const BitBoardMove move)
+    {
+        assert(at_checked(move.from) == piece);
+        clear(piece, move.from);
+        set(piece, move.to);
+        assert(!at(move.from).has_value());
+        assert(at_checked(move.to) == piece);
+    }
+
+    template <Direction D>
+    [[nodiscard]] BitBoard sliding_moves(BitBoard from, size_t range = BitBoard::board_size) const
+    {
+        auto moves = BitBoard{from};
+        for (size_t distance = 0; distance < range; ++distance) {
+            moves.dilate<D>();
+            if ((moves & ~from).test_any(occupied()) || moves.on_edge<D>()) {
+                break;
+            }
+        }
+        return moves.clear(from);
+    }
+    [[nodiscard]] BitBoard sliding_moves(Direction direction, BitBoard from, size_t range = BitBoard::board_size) const;
+    template <typename DirectionRange>
+    [[nodiscard]] BitBoard
+    sliding_moves(DirectionRange&& directions, BitBoard from, size_t range = BitBoard::board_size) const
+    {
+        BitBoard moves;
+        for (const auto direction : std::forward<DirectionRange>(directions)) {
+            moves.set(sliding_moves(direction, from, range));
+        }
+        return moves;
+    }
+
+  private:
     BitBoard pawns_;
     BitBoard knights_;
     BitBoard bishops_;
@@ -125,107 +275,26 @@ class Board
     BitBoard kings_;
     BitBoard black_;
     BitBoard white_;
-    PieceColor active_color_{PieceColor::white};
-    bool black_queenside_castle_piece_moved_{false};
-    bool black_kingside_castle_piece_moved_{false};
-    bool white_queenside_castle_piece_moved_{false};
-    bool white_kingside_castle_piece_moved_{false};
 
-    [[nodiscard]] bool occupied(BitBoard position) const;
-    [[nodiscard]] std::optional<Piece> piece_at(BitBoard position) const;
-    [[nodiscard]] std::optional<PieceType> piece_type_at(BitBoard position) const;
-    [[nodiscard]] std::optional<PieceColor> piece_color_at(BitBoard position) const;
-    [[nodiscard]] Piece piece_at_checked(const Position& position) const;
-    [[nodiscard]] Piece piece_at_checked(BitBoard position) const;
-    [[nodiscard]] BitBoard occupied_board() const;
-    [[nodiscard]] BitBoard attacked_by_white_board() const;
-    [[nodiscard]] BitBoard attacked_by_black_board() const;
-    [[nodiscard]] BitBoard attacked_by_active() const;
-    [[nodiscard]] BitBoard attacked_by_opponent() const;
-    [[nodiscard]] bool is_king_in_check() const;
-    [[nodiscard]] bool is_in_checkmate();
-    [[nodiscard]] bool is_pawn(BitBoard position) const;
-    [[nodiscard]] bool is_knight(BitBoard position) const;
-    [[nodiscard]] bool is_bishop(BitBoard position) const;
-    [[nodiscard]] bool is_rook(BitBoard position) const;
-    [[nodiscard]] bool is_queen(BitBoard position) const;
-    [[nodiscard]] bool is_king(BitBoard position) const;
-    [[nodiscard]] bool is_black(BitBoard position) const;
-    [[nodiscard]] bool is_white(BitBoard position) const;
-    void clear_pieces(BitBoard board);
-    void set_pieces(Piece piece, BitBoard positions);
-    void move_piece(BitBoardPieceMove move);
-    void promote_piece(BitBoardMove move);
-    void make_move(BitBoardPieceMove move);
-    void undo_previous_move();
-    void castle(BitBoardPieceMove king_move);
-    void white_castle(BitBoardPieceMove king_move);
-    void black_castle(BitBoardPieceMove king_move);
-    void update_en_passant_state(BitBoardPieceMove move);
-    void update_castling_state(BitBoardPieceMove move);
+    template <PieceColor Color>
+    constexpr BitBoard& of()
+    {
+        return const_cast<BitBoard&>(std::as_const(*this).of<Color>());
+    }
+    constexpr BitBoard& of(const PieceColor color)
+    {
+        return const_cast<BitBoard&>(std::as_const(*this).of(color));
+    }
 
-    [[nodiscard]] BitBoard valid_moves_bitboard(Position from) const;
-    [[nodiscard]] std::map<Position, BitBoard> all_valid_moves_bitboards() const;
-    [[nodiscard]] BitBoard attacking_bitboard(Position from) const;
-    [[nodiscard]] BitBoard pawn_moves(Position from, PieceColor color) const;
-    [[nodiscard]] BitBoard pawn_attacking_squares(Position from, PieceColor color) const;
-    [[nodiscard]] BitBoard pawn_attacking_moves(Position from, PieceColor color) const;
-    [[nodiscard]] BitBoard knight_moves(Position from, PieceColor color) const;
-    [[nodiscard]] BitBoard bishop_moves(Position from, PieceColor color) const;
-    [[nodiscard]] BitBoard rook_moves(Position from, PieceColor color) const;
-    [[nodiscard]] BitBoard queen_moves(Position from, PieceColor color) const;
-    [[nodiscard]] BitBoard king_castling_moves(PieceColor color) const;
-    [[nodiscard]] BitBoard king_standard_moves(Position from, PieceColor color) const;
-    [[nodiscard]] BitBoard king_moves(Position from, PieceColor color) const;
-    [[nodiscard]] bool white_can_castle_kingside() const;
-    [[nodiscard]] bool white_can_castle_queenside() const;
-    [[nodiscard]] bool white_can_castle(BitBoard between_squares, BitBoard king_squares) const;
-    [[nodiscard]] bool black_can_castle_kingside() const;
-    [[nodiscard]] bool black_can_castle_queenside() const;
-    [[nodiscard]] bool black_can_castle(BitBoard between_squares, BitBoard king_squares) const;
-    [[nodiscard]] BitBoard black_king_castling_moves() const;
-    [[nodiscard]] BitBoard white_king_castling_moves() const;
-
-    template <Direction D>
-    [[nodiscard]] BitBoard sliding_moves(BitBoard from, size_t range = BitBoard::board_size) const;
-    [[nodiscard]] BitBoard sliding_moves(Direction direction, BitBoard from, size_t range = BitBoard::board_size) const;
-    template <typename DirectionRange>
-    [[nodiscard]] BitBoard
-    sliding_moves(DirectionRange&& directions, Position from, size_t range = BitBoard::board_size) const;
-
-    [[nodiscard]] bool is_pawn_start_square(Position from) const;
-    void remove_if_color(BitBoard& moves, PieceColor color) const;
-    [[nodiscard]] BitBoard board_of_color(PieceColor color) const;
-    [[nodiscard]] BitBoard& board_of_color(PieceColor color);
-    [[nodiscard]] BitBoard active_color_board() const;
-    [[nodiscard]] BitBoard& active_color_board();
-    [[nodiscard]] BitBoard inactive_color_board() const;
-    [[nodiscard]] BitBoard& inactive_color_board();
-
-    void set_state(const BoardState& state);
+    template <PieceType Type>
+    constexpr BitBoard& of()
+    {
+        return const_cast<BitBoard&>(std::as_const(*this).of<Type>());
+    }
+    constexpr BitBoard& of(const PieceType type)
+    {
+        return const_cast<BitBoard&>(std::as_const(*this).of(type));
+    }
 };
-
-template <Direction D>
-[[nodiscard]] BitBoard Board::sliding_moves(const BitBoard from, const size_t range) const
-{
-    auto moves = BitBoard{from};
-    for (size_t distance = 0; distance < range; ++distance) {
-        moves.dilate<D>();
-        if ((moves & ~from).test_any(occupied_board()) || moves.on_edge<D>()) {
-            break;
-        }
-    }
-    return moves.clear(from);
-}
-
-template <typename DirectionRange>
-[[nodiscard]] BitBoard Board::sliding_moves(DirectionRange&& directions, const Position from, size_t range) const
-{
-    BitBoard moves;
-    for (const auto direction : std::forward<DirectionRange>(directions)) {
-        moves.set(sliding_moves(direction, BitBoard{from}, range));
-    }
-    return moves;
-}
 
 } // namespace chess

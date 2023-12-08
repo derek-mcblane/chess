@@ -4,6 +4,9 @@ Checks:
     bugprone-*
     portability-*
     readability-*
+    -readability-convert-member-functions-to-static
+    -readability-identifier-length
+    -readability-magic-numbers
     modernize-*
     -modernize-use-trailing-return-type
     cpp-core-guidelines-*
