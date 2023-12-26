@@ -113,13 +113,7 @@ class ChessApplication
 
         auto pieces_image = sdl::image::load_sized_svg(sprite_map_filename, {1000, 0});
         pieces_sprite_map_.texture() = sdl::Texture{renderer_.make_texture_from_surface(pieces_image.get())};
-
-        for (const auto color : {PieceColor::black, PieceColor::white}) {
-            for (const auto type : {PieceType::knight, PieceType::bishop, PieceType::rook, PieceType::queen}) {
-                const auto piece = Piece{color, type};
-                piece_textures_.insert({piece, make_piece_texture(piece, {100, 100})});
-            }
-        }
+        update_piece_textures();
     }
 
     sdl::Texture make_piece_texture(const Piece piece, const sdl::Point<int> size)
@@ -316,6 +310,17 @@ class ChessApplication
         render_pieces();
     }
 
+    void update_piece_textures()
+    {
+        const auto piece_size = board_display_.size().x / board_size;
+        for (const auto color : {PieceColor::black, PieceColor::white}) {
+            for (const auto type : {PieceType::knight, PieceType::bishop, PieceType::rook, PieceType::queen}) {
+                const auto piece = Piece{color, type};
+                piece_textures_.insert({piece, make_piece_texture(piece, {piece_size, piece_size})});
+            }
+        }
+    }
+
     void update_board_display_region(const sdl::Rectangle<int> region)
     {
         using namespace sdl::point_operators;
@@ -334,6 +339,8 @@ class ChessApplication
             const auto sprite_map_texture_size = sdl::Point<int>{std::max(board_display_.region().w, 100), 0};
             auto pieces_image = sdl::image::load_sized_svg(sprite_map_filename, sprite_map_texture_size);
             pieces_sprite_map_.texture() = sdl::Texture{renderer_.make_texture_from_surface(pieces_image.get())};
+
+            update_piece_textures();
         }
     }
 
