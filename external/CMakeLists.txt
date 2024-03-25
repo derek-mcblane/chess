@@ -1,3 +1,4 @@
+add_subdirectory(SDLWrap)
 add_subdirectory(bit-board)
 
 add_library(ImguiUserConfig INTERFACE)
@@ -7,4 +8,4 @@ set(IMGUI_USER_CONFIG_TARGET ImguiUserConfig CACHE STRING "")
 set(IMGUI_USER_CONFIG imgui_chess_config.h CACHE STRING "")
 option(IMGUI_DEFINE_MATH_OPERATORS "" ON)
 option(IMGUI_USE_STDLIB_SUPPORT "" ON)
-add_subdirectory(imgui SYSTEM)
+add_subdirectory(imgui)

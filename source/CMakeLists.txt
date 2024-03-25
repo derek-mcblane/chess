@@ -1,26 +1,42 @@
 # Chess
 add_library(Chess "")
-target_compile_features(Chess PUBLIC cxx_std_20)
+target_compile_features(Chess PRIVATE  cxx_std_20)
+target_compile_options(Chess PRIVATE ${CHESS_WARNING_OPTIONS})
 target_sources(Chess
+PUBLIC FILE_SET HEADERS FILES
+    pieces.h
+    board.h
+    game.h
 PRIVATE
     pieces.cpp
     board.cpp
     game.cpp
 )
-target_compile_options(Chess PUBLIC ${CHESS_WARNING_OPTIONS})
-target_include_directories(Chess PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
-target_link_libraries(Chess PUBLIC BitBoard)
+target_include_directories(Chess PUBLIC
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+    $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
+)
+target_link_libraries(Chess
+PUBLIC
+    BitBoard
+)
+install(TARGETS Chess EXPORT ChessTargets
+    FILE_SET HEADERS
+    INCLUDES DESTINATIION ${CMAKE_INSTALL_INCLUDEDIR}
+)
 
 # Chess GUI Application
 find_package(SDL2 REQUIRED CONFIG COMPONENTS SDL2main)
 add_executable(ChessApp WIN32 "")
 target_sources(ChessApp
+PRIVATE FILE_SET HEADERS FILES
+    grid_view.h
 PRIVATE
     main.cpp
     grid_view.cpp
 )
 target_compile_features(ChessApp PUBLIC cxx_std_20)
-target_compile_options(ChessApp PUBLIC ${CHESS_WARNING_OPTIONS})
+target_compile_options(ChessApp PRIVATE ${CHESS_WARNING_OPTIONS})
 target_link_libraries(ChessApp
 PRIVATE
     Microsoft.GSL::GSL
@@ -41,7 +57,4 @@ PRIVATE
     Chess
 )
 
-install(TARGETS ChessApp 
-    CONFIGURATIONS Debug Release
-    RUNTIME DESTINATION bin
-)
+install(TARGETS ChessApp EXPORT ChessTargets)
